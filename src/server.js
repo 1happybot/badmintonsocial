@@ -52,8 +52,9 @@ app.use(session({
 
 app.use(attachUser(
   async (id) => {
-    const r = await query('SELECT id, name, email, city, skill_rating FROM users WHERE id = $1', [id]);
-    return r.rows[0] || null;
+    const r = await query('SELECT id, name, email, city, skill_rating, is_active FROM users WHERE id = $1', [id]);
+    const u = r.rows[0];
+    return u && u.is_active ? u : null;
   },
   async (id) => {
     const r = await query('SELECT id, name, email FROM admins WHERE id = $1', [id]);

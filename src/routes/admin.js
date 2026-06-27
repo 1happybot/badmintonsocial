@@ -119,6 +119,23 @@ export function createAdminRouter(deps = {}) {
        ORDER BY wsa.created_at ASC`
     )).rows;
 
+    const players = (await runQuery(
+      `SELECT u.id, u.name, u.email, u.city, u.skill_rating, u.is_active, u.created_at,
+              COALESCE(f.no_show_count, 0) AS no_show_count,
+              COALESCE(f.non_payment_count, 0) AS non_payment_count
+       FROM users u
+       LEFT JOIN (
+         SELECT to_user_id,
+                SUM(CASE WHEN reported_no_show THEN 1 ELSE 0 END)::int AS no_show_count,
+                SUM(CASE WHEN reported_non_payment THEN 1 ELSE 0 END)::int AS non_payment_count
+         FROM challenge_feedback
+         WHERE created_at >= NOW() - INTERVAL '90 days'
+         GROUP BY to_user_id
+       ) f ON f.to_user_id = u.id
+       ORDER BY u.is_active ASC, u.created_at DESC
+       LIMIT 200`
+    )).rows;
+
     res.render('admin_dashboard', {
       title: 'Admin Dashboard',
       badges,
@@ -126,8 +143,64 @@ export function createAdminRouter(deps = {}) {
       badgeApplications,
       badgeApplicationHistory,
       pendingWallAppeals,
+      players,
       criteriaOptions: ['matches_played', 'wins', 'undefeated'],
     });
+  });
+
+  router.post('/admin/players/:id/ban', requireAdminAuthMiddleware, async (req, res) => {
+    const userId = Number(req.params.id);
+    if (!Number.isInteger(userId)) {
+      flashFn(req, 'error', 'Invalid player id.');
+      return res.redirect('/admin');
+    }
+    const r = await runQuery(
+      `UPDATE users SET is_active = FALSE WHERE id = $1 AND is_active = TRUE RETURNING id, name`,
+      [userId]
+    );
+    if (r.rowCount === 0) {
+      flashFn(req, 'error', 'Player not found or already banned.');
+    } else {
+      flashFn(req, 'success', `Player "${r.rows[0].name}" has been banned.`);
+    }
+    return res.redirect('/admin');
+  });
+
+  router.post('/admin/players/:id/unban', requireAdminAuthMiddleware, async (req, res) => {
+    const userId = Number(req.params.id);
+    if (!Number.isInteger(userId)) {
+      flashFn(req, 'error', 'Invalid player id.');
+      return res.redirect('/admin');
+    }
+    const r = await runQuery(
+      `UPDATE users SET is_active = TRUE WHERE id = $1 AND is_active = FALSE RETURNING id, name`,
+      [userId]
+    );
+    if (r.rowCount === 0) {
+      flashFn(req, 'error', 'Player not found or already active.');
+    } else {
+      flashFn(req, 'success', `Player "${r.rows[0].name}" has been reinstated.`);
+    }
+    return res.redirect('/admin');
+  });
+
+  router.post('/admin/players/:id/delete', requireAdminAuthMiddleware, async (req, res) => {
+    const userId = Number(req.params.id);
+    if (!Number.isInteger(userId)) {
+      flashFn(req, 'error', 'Invalid player id.');
+      return res.redirect('/admin');
+    }
+    try {
+      const r = await runQuery(`DELETE FROM users WHERE id = $1 RETURNING id, name`, [userId]);
+      if (r.rowCount === 0) {
+        flashFn(req, 'error', 'Player not found.');
+      } else {
+        flashFn(req, 'success', `Player "${r.rows[0].name}" has been removed.`);
+      }
+    } catch (_err) {
+      flashFn(req, 'error', 'Could not remove player.');
+    }
+    return res.redirect('/admin');
   });
 
   router.post('/admin/wall-appeals/:id/approve', requireAdminAuthMiddleware, async (req, res) => {

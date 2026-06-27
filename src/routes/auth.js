@@ -134,13 +134,17 @@ router.get('/login', (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   const normalizedEmail = String(email || '').trim().toLowerCase();
-  const result = await query('SELECT id, password_hash FROM users WHERE email = $1', [normalizedEmail]);
+  const result = await query('SELECT id, password_hash, is_active FROM users WHERE email = $1', [normalizedEmail]);
   const user = result.rows[0];
 
   const ok = user ? await bcrypt.compare(password || '', user.password_hash) : false;
   if (!ok) {
     flash(req, 'error', 'Invalid email or password.');
     return res.status(401).render('login', { title: 'Log in', form: { email } });
+  }
+  if (!user.is_active) {
+    flash(req, 'error', 'This account has been banned. Contact an admin if you believe this is a mistake.');
+    return res.status(403).render('login', { title: 'Log in', form: { email } });
   }
 
   req.session.userId = user.id;

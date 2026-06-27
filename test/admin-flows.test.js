@@ -130,6 +130,9 @@ test('admin dashboard renders reviewed badge history with reviewer information',
     if (/FROM\s+wall_of_shame_appeals\s+wsa/i.test(sql) && /WHERE\s+wsa\.status\s*=\s*'pending'/i.test(sql)) {
       return { rows: [] };
     }
+    if (/FROM\s+users\s+u/i.test(sql) && /ORDER BY\s+u\.is_active/i.test(sql)) {
+      return { rows: [] };
+    }
     throw new Error(`Unexpected query: ${sql}`);
   };
 

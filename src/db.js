@@ -43,6 +43,7 @@ export async function initSchema() {
 
     ALTER TABLE users ADD COLUMN IF NOT EXISTS shuttle_preference TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'Sweden';
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_style TEXT NOT NULL DEFAULT 'smash';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS handedness TEXT NOT NULL DEFAULT 'right';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_format TEXT NOT NULL DEFAULT 'singles';
