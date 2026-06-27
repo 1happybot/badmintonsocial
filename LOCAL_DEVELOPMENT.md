@@ -75,7 +75,7 @@ CREATE DATABASE topminton OWNER bsuser;
 Copy the template and edit it:
 
 ```bash
-cp .env.example .env
+cp .env.development.example .env.development
 ```
 
 Minimum values for local dev:
@@ -93,7 +93,7 @@ Generate a strong `SESSION_SECRET`:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-> `.env` is gitignored — never commit real secrets.
+> `.env.development` and `.env.production` are gitignored — never commit real secrets.
 
 ---
 
@@ -150,7 +150,8 @@ src/
 public/
   styles.css         # served at /styles.css
 railway.json         # Railway deploy config
-.env.example         # env template
+.env.development.example  # development env template
+.env.production.example   # production env template
 ```
 
 ---
@@ -224,7 +225,12 @@ Easiest local fix: make the app user the database owner from the start (Option A
 
 ### `DATABASE_URL is not set`
 
-You haven't created `.env`, or you're running the process from a shell that doesn't have it loaded. `dotenv` is loaded automatically by [src/server.js](src/server.js), but only reads `.env` from the **current working directory** — run `npm start` from the project root.
+You haven't created the env file used by the script you're running:
+
+- `npm run dev` expects `.env.development`
+- `npm start` / `npm run prod` expect `.env.production`
+
+Both scripts load the file through `DOTENV_CONFIG_PATH`.
 
 ### `ECONNREFUSED 127.0.0.1:5432`
 
@@ -232,7 +238,7 @@ Postgres isn't running. Start it with `docker start bspg` (Option A) or `brew se
 
 ### `password authentication failed for user "bsuser"`
 
-The user/password in `DATABASE_URL` doesn't match the database. Recreate the user with the password from your `.env`, or update `.env` to match Postgres.
+The user/password in `DATABASE_URL` doesn't match the database. Recreate the user with the password from your active env file (`.env.development` or `.env.production`) or update that file to match Postgres.
 
 ### `relation "session" does not exist`
 

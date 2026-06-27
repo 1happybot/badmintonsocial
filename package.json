@@ -8,8 +8,9 @@
     "node": ">=18"
   },
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
+    "start": "DOTENV_CONFIG_PATH=.env.production NODE_ENV=production node src/server.js",
+    "dev": "DOTENV_CONFIG_PATH=.env.development NODE_ENV=development node --watch src/server.js",
+    "prod": "DOTENV_CONFIG_PATH=.env.production NODE_ENV=production node src/server.js",
     "seed:demo": "node src/seed_demo.js",
     "test": "DATABASE_URL=postgresql://localhost/topminton_test node --test test/*.test.js"
   },

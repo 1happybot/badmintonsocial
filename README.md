@@ -70,8 +70,8 @@ docker run --rm -d --name badmin-pg -p 5432:5432 \
   postgres:18
 
 # 3. Configure environment
-cp .env.example .env
-# Edit .env: Set SESSION_SECRET to a long random string
+cp .env.development.example .env.development
+# Edit .env.development: Set SESSION_SECRET to a long random string
 # DATABASE_URL defaults to: postgresql://badmin:badmin_pwd@localhost:5432/topminton
 
 # 4. Start the app
@@ -91,6 +91,20 @@ npm test
 ```
 
 The test script runs Node's built-in test runner and sets a placeholder `DATABASE_URL` for import safety in isolated route tests.
+
+### Running In Production Mode
+
+```bash
+# 1) Create production env file once
+cp .env.production.example .env.production
+
+# 2) Set strong production values in .env.production
+
+# 3) Start in production mode
+npm run prod
+```
+
+This starts the app with `NODE_ENV=production` and loads `.env.production`, enabling production cookie/security behavior.
 
 ### Demo Seed Data
 
@@ -117,6 +131,11 @@ This creates/updates 10 demo players and inserts randomized completed challenge 
 6. Open the generated public URL. Enjoy!
 
 ### Environment Variables
+
+The app now supports split env files for cleaner switching:
+
+- `.env.development` (used by `npm run dev`)
+- `.env.production` (used by `npm run prod` and `npm start`)
 
 - `DATABASE_URL` — Postgres connection string (auto-injected by Railway, or set locally)
 - `SESSION_SECRET` — long random string for session encryption
@@ -176,7 +195,8 @@ public/
   styles.css               # responsive CSS variables, dark theme
 railway.json               # Railway build/deploy config
 LOCAL_DEVELOPMENT.md       # detailed local setup guide
-.env.example               # environment template
+.env.development.example   # development environment template
+.env.production.example    # production environment template
 test/
   badge-flows.test.js      # badge, profile edit, and appeal moderation flow tests
 ```
@@ -284,9 +304,6 @@ Currently, this app does not support password reset. Users must create a new acc
 ## Roadmap
 
 - [ ] Email notifications for challenges and hosted match updates
-- [ ] ELO-style rating system
-- [ ] Seasonal leaderboards
-- [ ] Mobile app (React Native / Flutter)
 - [ ] Support for other countries (international scaling)
 
 ## Contributing
