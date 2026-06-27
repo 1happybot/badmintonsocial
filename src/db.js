@@ -44,6 +44,17 @@ export async function initSchema() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS shuttle_preference TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'Sweden';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS topminton_points INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+
+    UPDATE users
+    SET referral_code = UPPER(SUBSTRING(MD5(id::text || COALESCE(email, '') || '-topminton'), 1, 8))
+    WHERE referral_code IS NULL;
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code);
+    CREATE INDEX IF NOT EXISTS idx_users_referred_by ON users(referred_by_user_id);
+
     ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_style TEXT NOT NULL DEFAULT 'smash';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS handedness TEXT NOT NULL DEFAULT 'right';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_format TEXT NOT NULL DEFAULT 'singles';
@@ -125,6 +136,21 @@ export async function initSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    ALTER TABLE hosted_matches DROP CONSTRAINT IF EXISTS hosted_matches_status_check;
+    ALTER TABLE hosted_matches ADD CONSTRAINT hosted_matches_status_check
+      CHECK (status IN ('open','full','cancelled','completed'));
+
+    CREATE TABLE IF NOT EXISTS point_transactions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      points INTEGER NOT NULL CHECK (points > 0),
+      reason TEXT NOT NULL,
+      source_type TEXT NOT NULL,
+      source_id INTEGER NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(user_id, source_type, source_id, reason)
+    );
+
     CREATE TABLE IF NOT EXISTS admins (
       id SERIAL PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
@@ -198,6 +224,7 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_hosted_match_participants_match ON hosted_match_participants(hosted_match_id);
     CREATE INDEX IF NOT EXISTS idx_hosted_match_participants_user ON hosted_match_participants(user_id);
     CREATE INDEX IF NOT EXISTS idx_hosted_match_messages_match ON hosted_match_messages(hosted_match_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_point_transactions_user ON point_transactions(user_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_badges_criteria ON badges(criteria_type, threshold);
     CREATE INDEX IF NOT EXISTS idx_user_badges_user ON user_badges(user_id);
     CREATE INDEX IF NOT EXISTS idx_badge_applications_user ON badge_applications(user_id);

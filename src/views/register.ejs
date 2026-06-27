@@ -8,6 +8,13 @@
         <p class="text-secondary text-center mb-4">Join TopMinton Sverige</p>
 
         <form method="post" action="/register">
+          <% if (form.ref) { %>
+            <div class="alert alert-success small mb-3">
+              <i class="bi bi-gift"></i> You were invited with referral code <strong><%= form.ref %></strong>.
+              Complete <strong>5 matches</strong> after signup and your referrer earns 50 TopMinton points!
+            </div>
+            <input type="hidden" name="ref" value="<%= form.ref %>" />
+          <% } %>
           <div class="mb-3">
             <label class="form-label">Name</label>
             <input type="text" name="name" class="form-control" required maxlength="80" value="<%= form.name || '' %>">

@@ -22,7 +22,7 @@
           <% if (match.host_city) { %> · <i class="bi bi-geo"></i> <%= match.host_city %><% } %>
         </div>
       </div>
-      <span class="badge text-bg-<%= match.status === 'open' ? 'success' : match.status === 'full' ? 'warning' : 'secondary' %>">
+      <span class="badge text-bg-<%= match.status === 'open' ? 'success' : match.status === 'full' ? 'warning' : match.status === 'completed' ? 'primary' : 'secondary' %>">
         <%= match.status %>
       </span>
     </div>
@@ -47,11 +47,17 @@
     <% } %>
 
     <div class="d-flex gap-2 flex-wrap">
-      <% if (isHost && match.status !== 'cancelled') { %>
+      <% if (isHost && (match.status === 'open' || match.status === 'full')) { %>
+        <form method="post" action="/hosted-matches/<%= match.id %>/complete" class="d-inline"
+              onsubmit="return confirm('Mark this match as completed? 25 points will be awarded to you and 10 points to each joined player.');">
+          <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check2-circle"></i> Mark completed</button>
+        </form>
+      <% } %>
+      <% if (isHost && match.status !== 'cancelled' && match.status !== 'completed') { %>
         <form method="post" action="/hosted-matches/<%= match.id %>/cancel" class="d-inline">
           <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i> Cancel match</button>
         </form>
-      <% } else if (isParticipant && !isHost) { %>
+      <% } else if (isParticipant && !isHost && match.status !== 'completed' && match.status !== 'cancelled') { %>
         <form method="post" action="/hosted-matches/<%= match.id %>/leave" class="d-inline">
           <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-box-arrow-left"></i> Leave</button>
         </form>

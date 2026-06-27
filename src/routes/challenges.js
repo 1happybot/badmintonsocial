@@ -2,6 +2,7 @@ import express from 'express';
 import { pool, query } from '../db.js';
 import { requireAuth, flash } from '../middleware.js';
 import { grantEligibleBadges } from '../badges.js';
+import { awardPoints, maybeRewardReferrer, POINTS_ATTEND, POINTS_HOST } from '../points.js';
 
 const router = express.Router();
 const MAX_PENDING_OUTGOING = 8;
@@ -312,6 +313,69 @@ router.post('/hosted-matches/:id/leave', requireAuth, async (req, res) => {
   res.redirect('/challenges');
 });
 
+router.post('/hosted-matches/:id/complete', requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).send('Invalid id');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const matchRes = await client.query(
+      `SELECT * FROM hosted_matches WHERE id = $1 FOR UPDATE`,
+      [id]
+    );
+    const m = matchRes.rows[0];
+    if (!m) throw new Error('not_found');
+    if (m.host_id !== req.session.userId) throw new Error('forbidden');
+    if (!['open', 'full'].includes(m.status)) throw new Error('not_completable');
+
+    await client.query(
+      `UPDATE hosted_matches SET status = 'completed', updated_at = NOW() WHERE id = $1`,
+      [id]
+    );
+
+    const partRes = await client.query(
+      `SELECT user_id FROM hosted_match_participants WHERE hosted_match_id = $1`,
+      [id]
+    );
+
+    await awardPoints(client, {
+      userId: m.host_id,
+      points: POINTS_HOST,
+      reason: 'hosted',
+      sourceType: 'hosted_match',
+      sourceId: id,
+    });
+    for (const row of partRes.rows) {
+      if (row.user_id === m.host_id) continue;
+      await awardPoints(client, {
+        userId: row.user_id,
+        points: POINTS_ATTEND,
+        reason: 'attended',
+        sourceType: 'hosted_match',
+        sourceId: id,
+      });
+      await maybeRewardReferrer(client, row.user_id);
+    }
+
+    await client.query('COMMIT');
+    flash(req, 'success', `Match completed. ${POINTS_HOST} points awarded to you and ${POINTS_ATTEND} to each player who joined.`);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    if (err && err.message === 'forbidden') {
+      flash(req, 'error', 'Only the host can mark a match as completed.');
+    } else if (err && err.message === 'not_completable') {
+      flash(req, 'error', 'This match cannot be marked completed.');
+    } else {
+      flash(req, 'error', 'Could not complete hosted match.');
+    }
+  } finally {
+    client.release();
+  }
+
+  res.redirect(`/hosted-matches/${id}`);
+});
+
 router.post('/hosted-matches/:id/cancel', requireAuth, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).send('Invalid id');
@@ -523,6 +587,10 @@ router.post('/challenges/:id/result', requireAuth, async (req, res) => {
     );
     await grantEligibleBadges(client, winnerId);
     await grantEligibleBadges(client, loserId);
+    await awardPoints(client, { userId: c.challenger_id, points: POINTS_ATTEND, reason: 'attended', sourceType: 'challenge', sourceId: id });
+    await awardPoints(client, { userId: c.opponent_id, points: POINTS_ATTEND, reason: 'attended', sourceType: 'challenge', sourceId: id });
+    await maybeRewardReferrer(client, c.challenger_id);
+    await maybeRewardReferrer(client, c.opponent_id);
     await client.query('COMMIT');
 
     flash(req, 'success', 'Result recorded.');

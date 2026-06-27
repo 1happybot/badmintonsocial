@@ -2,12 +2,18 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { query } from '../db.js';
 import { flash } from '../middleware.js';
+import { generateReferralCode } from '../points.js';
 
 const router = express.Router();
 
+function normalizeRefCode(value) {
+  return String(value || '').trim().toUpperCase().slice(0, 16) || null;
+}
+
 router.get('/register', (req, res) => {
   if (req.session.userId) return res.redirect('/players');
-  res.render('register', { title: 'Register', form: {} });
+  const ref = normalizeRefCode(req.query.ref);
+  res.render('register', { title: 'Register', form: { ref } });
 });
 
 router.post('/register', async (req, res) => {
@@ -28,6 +34,7 @@ router.post('/register', async (req, res) => {
     partner_name,
     partner_handedness,
     partner_skill_rating,
+    ref,
   } = req.body;
   const form = {
     name,
@@ -45,6 +52,7 @@ router.post('/register', async (req, res) => {
     partner_name,
     partner_handedness,
     partner_skill_rating,
+    ref: normalizeRefCode(ref),
   };
 
   if (!name || !email || !password) {
@@ -92,13 +100,34 @@ router.post('/register', async (req, res) => {
   }
 
   const teamPreferredFormat = isTeamMode && safePreferredFormat === 'singles' ? 'doubles' : safePreferredFormat;
+
+  let referrerId = null;
+  const refCode = normalizeRefCode(ref);
+  if (refCode) {
+    const refRes = await query(
+      'SELECT id FROM users WHERE referral_code = $1 AND is_active = TRUE',
+      [refCode]
+    );
+    if (refRes.rowCount > 0) {
+      referrerId = refRes.rows[0].id;
+    }
+  }
+
+  let newReferralCode = generateReferralCode();
+  for (let i = 0; i < 5; i += 1) {
+    const clash = await query('SELECT 1 FROM users WHERE referral_code = $1', [newReferralCode]);
+    if (clash.rowCount === 0) break;
+    newReferralCode = generateReferralCode();
+  }
+
   const inserted = await query(
     `INSERT INTO users (
        name, email, password_hash, city, country, skill_rating, shuttle_preference, bio,
        avatar_style, handedness, preferred_format, interested_in_tournaments, club_player,
-       team_mode, partner_name, partner_handedness, partner_skill_rating
+       team_mode, partner_name, partner_handedness, partner_skill_rating,
+       referral_code, referred_by_user_id
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
      RETURNING id`,
     [
       name.trim(),
@@ -118,6 +147,8 @@ router.post('/register', async (req, res) => {
       safePartnerName,
       safePartnerHandedness,
       safePartnerRating,
+      newReferralCode,
+      referrerId,
     ]
   );
 

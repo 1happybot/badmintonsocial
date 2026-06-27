@@ -20,6 +20,8 @@
           <span class="badge text-bg-secondary"><%= player.preferred_format %></span>
           <span class="mx-2">·</span>
           <span class="badge text-bg-info">Feedback <%= Number(player.avg_feedback_rating || 0).toFixed(1) %>/10</span>
+          <span class="mx-2">·</span>
+          <span class="badge text-bg-warning"><i class="bi bi-trophy-fill"></i> <%= player.topminton_points || 0 %> TopMinton pts</span>
         </div>
       </div>
       <% if (currentUser && currentUser.id !== player.id) { %>
@@ -69,6 +71,86 @@
     <% } %>
   </div>
 </div>
+
+<% if (referralStats && player.referral_code) {
+     const refUrl = '/register?ref=' + player.referral_code;
+%>
+<div class="card tile mb-4">
+  <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+      <h2 class="h5 mb-0"><i class="bi bi-gift text-primary"></i> Invite friends &amp; earn points</h2>
+      <span class="badge text-bg-warning"><i class="bi bi-trophy-fill"></i> <%= referralStats.pointsEarned %> pts earned</span>
+    </div>
+    <p class="text-secondary small mb-3">
+      Share your referral link. When someone signs up and attends <strong>5 matches</strong>, you earn <strong>50 TopMinton points</strong>.
+    </p>
+
+    <div class="row g-3 align-items-stretch">
+      <div class="col-md-7">
+        <label class="form-label small text-secondary mb-1">Your referral link</label>
+        <div class="input-group">
+          <input type="text" class="form-control font-monospace" id="refLink"
+                 value="<%= refUrl %>" readonly />
+          <button class="btn btn-outline-primary" type="button"
+                  onclick="(async()=>{const i=document.getElementById('refLink');const url=window.location.origin+i.value;try{await navigator.clipboard.writeText(url);this.innerHTML='<i class=&quot;bi bi-check2&quot;></i> Copied';}catch(e){i.select();document.execCommand('copy');this.innerHTML='<i class=&quot;bi bi-check2&quot;></i> Copied';}})()">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+        </div>
+        <div class="form-text small">
+          Or share just the code: <code><%= player.referral_code %></code>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="row g-2 text-center">
+          <div class="col-4">
+            <div class="p-2 border rounded">
+              <div class="h4 mb-0"><%= referralStats.invitedCount %></div>
+              <div class="small text-secondary">Invited</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-2 border rounded">
+              <div class="h4 mb-0 text-success"><%= referralStats.rewardedCount %></div>
+              <div class="small text-secondary">Rewarded</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-2 border rounded">
+              <div class="h4 mb-0 text-warning"><%= referralStats.pointsEarned %></div>
+              <div class="small text-secondary">Points</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <% if (referralStats.invitedCount > 0) { %>
+      <div class="mt-3">
+        <details>
+          <summary class="small text-secondary">View your invited players</summary>
+          <ul class="list-unstyled small mt-2 mb-0">
+            <% referralStats.invited.forEach(function(r){
+                 const done = r.attended_count >= 5;
+            %>
+              <li class="d-flex justify-content-between align-items-center py-1 border-top">
+                <a href="/players/<%= r.id %>" class="text-decoration-none"><%= r.name %></a>
+                <span class="text-secondary">
+                  <%= r.attended_count %>/5 matches
+                  <% if (done) { %>
+                    <span class="badge text-bg-success ms-2"><i class="bi bi-check-circle"></i> Rewarded</span>
+                  <% } else { %>
+                    <span class="badge text-bg-secondary ms-2">In progress</span>
+                  <% } %>
+                </span>
+              </li>
+            <% }) %>
+          </ul>
+        </details>
+      </div>
+    <% } %>
+  </div>
+</div>
+<% } %>
 
 <h2 class="h5 mb-3"><i class="bi bi-patch-check"></i> Badges</h2>
 <% if (!badges || badges.length === 0) { %>

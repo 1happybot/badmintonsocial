@@ -55,6 +55,7 @@ export function createPlayerRouter(deps = {}) {
               u.avatar_style, u.handedness, u.preferred_format, u.shuttle_preference,
               u.interested_in_tournaments, u.club_player, u.team_mode,
               u.partner_name, u.partner_handedness, u.partner_skill_rating,
+              u.topminton_points, u.referral_code,
               COALESCE((SELECT ROUND(AVG(cf.rating)::numeric, 1) FROM challenge_feedback cf WHERE cf.to_user_id = u.id), 0) AS avg_feedback_rating,
               COALESCE((SELECT COUNT(*)::int FROM challenge_feedback cf WHERE cf.to_user_id = u.id), 0) AS feedback_count
        FROM users u
@@ -87,6 +88,7 @@ export function createPlayerRouter(deps = {}) {
 
     let badgeApplications = [];
     let availableBadges = [];
+    let referralStats = null;
     if (req.session.userId === id) {
       badgeApplications = (await runQuery(
         `SELECT ba.id, ba.status, ba.note, ba.created_at, b.id AS badge_id, b.name, b.slug, b.description
@@ -108,6 +110,34 @@ export function createPlayerRouter(deps = {}) {
          ORDER BY b.created_at DESC`,
         [id]
       )).rows;
+
+      const referredRes = await runQuery(
+        `SELECT u.id, u.name, u.created_at,
+                COALESCE(att.attended_count, 0) AS attended_count
+         FROM users u
+         LEFT JOIN (
+           SELECT user_id, COUNT(*)::int AS attended_count
+           FROM point_transactions
+           WHERE reason = 'attended'
+           GROUP BY user_id
+         ) att ON att.user_id = u.id
+         WHERE u.referred_by_user_id = $1
+         ORDER BY u.created_at DESC
+         LIMIT 50`,
+        [id]
+      );
+      const earnedRes = await runQuery(
+        `SELECT COALESCE(SUM(points), 0)::int AS total
+         FROM point_transactions
+         WHERE user_id = $1 AND source_type = 'referral'`,
+        [id]
+      );
+      referralStats = {
+        invited: referredRes.rows,
+        invitedCount: referredRes.rowCount,
+        rewardedCount: referredRes.rows.filter((r) => r.attended_count >= 5).length,
+        pointsEarned: earnedRes.rows[0]?.total || 0,
+      };
     }
 
     res.render('player_profile', {
@@ -117,6 +147,7 @@ export function createPlayerRouter(deps = {}) {
       badges,
       badgeApplications,
       availableBadges,
+      referralStats,
     });
   });
 
