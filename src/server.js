@@ -61,8 +61,29 @@ app.use(attachUser(
   }
 ));
 
-app.get('/', (req, res) => {
-  res.render('home', { title: 'TopMinton Sverige' });
+app.get('/', async (req, res) => {
+  const userId = req.session.userId || 0;
+  let openMatches = [];
+  try {
+    openMatches = (await query(
+      `SELECT hm.id, hm.title, hm.scheduled_at, hm.location, hm.max_players, hm.status, hm.host_id,
+              u.name AS host_name,
+              COUNT(hmp.id)::int AS joined_count,
+              BOOL_OR(hmp.user_id = $1) AS am_joined
+       FROM hosted_matches hm
+       JOIN users u ON u.id = hm.host_id
+       LEFT JOIN hosted_match_participants hmp ON hmp.hosted_match_id = hm.id
+       WHERE hm.status = 'open'
+         AND hm.scheduled_at >= NOW()
+       GROUP BY hm.id, u.name
+       ORDER BY hm.scheduled_at ASC
+       LIMIT 6`,
+      [userId]
+    )).rows;
+  } catch (err) {
+    console.error('[home] failed to load open matches', err);
+  }
+  res.render('home', { title: 'TopMinton Sverige', openMatches });
 });
 
 app.get('/about', (req, res) => {

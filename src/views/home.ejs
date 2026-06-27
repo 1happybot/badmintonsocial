@@ -9,115 +9,128 @@
       Find great players. <span class="text-primary">Play Swedish badminton.</span>
     </h1>
     <p class="lead text-secondary mb-4">
-      Join Sweden's badminton community. Browse skilled players in your city, challenge them, host group matches, 
-      and keep your profile active. All in one platform.
+      Register, host or join matches, and earn points as you play. Simple and fun.
     </p>
     <div class="d-flex justify-content-center flex-wrap gap-2">
       <% if (currentUser) { %>
         <a class="btn btn-primary btn-lg" href="/players"><i class="bi bi-people"></i> Browse players</a>
-        <a class="btn btn-outline-light btn-lg" href="/challenges"><i class="bi bi-trophy"></i> My challenges</a>
+        <a class="btn btn-outline-primary btn-lg" href="/challenges"><i class="bi bi-trophy"></i> My challenges</a>
       <% } else { %>
         <a class="btn btn-primary btn-lg" href="/register"><i class="bi bi-person-plus"></i> Create an account</a>
-        <a class="btn btn-outline-light btn-lg" href="/login">I already have one</a>
+        <a class="btn btn-outline-primary btn-lg" href="/login">I already have one</a>
       <% } %>
     </div>
   </div>
 </section>
 
-<section class="mb-4">
-  <h2 class="h4 mb-3"><i class="bi bi-compass"></i> How TopMinton Works</h2>
-  <p class="text-secondary mb-4">From signup to fair-play moderation, here is the full player journey in simple steps.</p>
+<section class="mb-4 text-center">
+  <h2 class="h4 mb-2"><i class="bi bi-compass"></i> How TopMinton Works</h2>
+  <p class="text-secondary mb-0">Three simple steps to get on the court.</p>
 </section>
 
-<section class="row g-4">
-  <div class="col-md-6 col-lg-4">
-    <div class="card tile h-100">
-      <div class="card-body text-center">
-        <div class="tile-icon bg-primary-subtle text-primary mb-3">
-          <i class="bi bi-person-plus fs-2"></i>
-        </div>
-        <h3 class="h5">1. Register</h3>
-        <p class="text-secondary mb-0">Create your player or doubles-team account with skill rating, format preference, and partner details.</p>
+<section class="journey-grid">
+  <div class="journey-step">
+    <div class="journey-step-number">1</div>
+    <div class="journey-step-icon bg-primary-subtle text-primary">
+      <i class="bi bi-person-plus"></i>
+    </div>
+    <h3 class="h5 mb-2">Register Your Profile</h3>
+    <p class="text-secondary mb-0">Create your player or doubles-team profile in under a minute.</p>
+  </div>
+
+  <div class="journey-connector" aria-hidden="true">
+    <i class="bi bi-arrow-right"></i>
+  </div>
+
+  <div class="journey-step">
+    <div class="journey-step-number">2</div>
+    <div class="journey-step-icon bg-info-subtle text-info">
+      <i class="bi bi-people-fill"></i>
+    </div>
+    <h3 class="h5 mb-2">Host or Join Matches</h3>
+    <p class="text-secondary mb-0">Set up a game with friends or jump into matches hosted near you.</p>
+  </div>
+
+  <div class="journey-connector" aria-hidden="true">
+    <i class="bi bi-arrow-right"></i>
+  </div>
+
+  <div class="journey-step">
+    <div class="journey-step-number">3</div>
+    <div class="journey-step-icon bg-warning-subtle text-warning">
+      <i class="bi bi-trophy-fill"></i>
+    </div>
+    <h3 class="h5 mb-2">Earn Points &amp; Recognition</h3>
+    <p class="text-secondary mb-0">Get points for hosting and participating, and unlock badges as you play.</p>
+  </div>
+</section>
+
+<%
+  function fmtMatchDate(d) {
+    return new Date(d).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+%>
+
+<section class="mt-5">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <h2 class="h4 mb-0"><i class="bi bi-calendar-event text-primary"></i> Open matches</h2>
+    <% if (currentUser) { %>
+      <a href="/challenges" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-right-circle"></i> All matches</a>
+    <% } %>
+  </div>
+
+  <% if (!openMatches || openMatches.length === 0) { %>
+    <div class="card tile">
+      <div class="card-body text-center text-secondary py-4">
+        <i class="bi bi-emoji-neutral fs-4 d-block mb-2"></i>
+        No open matches right now.
+        <% if (currentUser) { %>
+          <a href="/challenges" class="d-block mt-2">Host one for the community →</a>
+        <% } else { %>
+          <a href="/register" class="d-block mt-2">Join TopMinton to host your own →</a>
+        <% } %>
       </div>
     </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card tile h-100">
-      <div class="card-body text-center">
-        <div class="tile-icon bg-warning-subtle text-warning mb-3">
-          <i class="bi bi-person-gear fs-2"></i>
+  <% } else { %>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+      <% openMatches.forEach(function(m){
+           const isFull = m.joined_count >= m.max_players;
+           const isHost = currentUser && currentUser.id === m.host_id;
+      %>
+        <div class="col">
+          <div class="card tile h-100">
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h3 class="h6 mb-0">
+                  <a href="/hosted-matches/<%= m.id %>" class="text-decoration-none stretched-link"><%= m.title %></a>
+                </h3>
+                <span class="badge text-bg-<%= isFull ? 'warning' : 'success' %>"><%= isFull ? 'full' : 'open' %></span>
+              </div>
+              <div class="small text-secondary mb-3">
+                <div><i class="bi bi-person"></i> Host: <%= m.host_name %></div>
+                <div><i class="bi bi-calendar-event"></i> <%= fmtMatchDate(m.scheduled_at) %></div>
+                <div><i class="bi bi-geo-alt"></i> <%= m.location %></div>
+                <div><i class="bi bi-people"></i> <%= m.joined_count %>/<%= m.max_players %> players</div>
+              </div>
+              <div class="mt-auto small">
+                <% if (!currentUser) { %>
+                  <span class="text-primary"><i class="bi bi-box-arrow-in-right"></i> Log in to join</span>
+                <% } else if (isHost) { %>
+                  <span class="text-secondary"><i class="bi bi-star"></i> You are the host</span>
+                <% } else if (m.am_joined) { %>
+                  <span class="text-success"><i class="bi bi-check-circle"></i> You joined</span>
+                <% } else if (isFull) { %>
+                  <span class="text-secondary"><i class="bi bi-slash-circle"></i> Match is full</span>
+                <% } else { %>
+                  <span class="text-primary"><i class="bi bi-arrow-right-circle"></i> View &amp; join</span>
+                <% } %>
+              </div>
+            </div>
+          </div>
         </div>
-        <h3 class="h5">2. Customize Profile</h3>
-        <p class="text-secondary mb-0">Pick cool avatar styles, set handedness, update team info, and tune your badminton identity anytime.</p>
-      </div>
+      <% }) %>
     </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card tile h-100">
-      <div class="card-body text-center">
-        <div class="tile-icon bg-info-subtle text-info mb-3">
-          <i class="bi bi-send fs-2"></i>
-        </div>
-        <h3 class="h5">3. Challenge</h3>
-        <p class="text-secondary mb-0">Pick another registered player and propose a date, time and court.</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card tile h-100">
-      <div class="card-body text-center">
-        <div class="tile-icon bg-success-subtle text-success mb-3">
-          <i class="bi bi-people-fill fs-2"></i>
-        </div>
-        <h3 class="h5">4. Host Matches</h3>
-        <p class="text-secondary mb-0">Create group matches for 2–12 players, set the location, and let players join.</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card tile h-100">
-      <div class="card-body text-center">
-        <div class="tile-icon bg-primary-subtle text-primary mb-3">
-          <i class="bi bi-chat-heart fs-2"></i>
-        </div>
-        <h3 class="h5">5. Rate Match Experience</h3>
-        <p class="text-secondary mb-0">Submit post-match feedback from 1–10 and report no-shows or payment issues when needed.</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card tile h-100">
-      <div class="card-body text-center">
-        <div class="tile-icon bg-danger-subtle text-danger mb-3">
-          <i class="bi bi-shield-exclamation fs-2"></i>
-        </div>
-        <h3 class="h5">6. Fair-Play Protection</h3>
-        <p class="text-secondary mb-0">Automated anti-spam checks, cancellation limits, and Wall-of-Shame visibility keep the community fair.</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card tile h-100">
-      <div class="card-body text-center">
-        <div class="tile-icon bg-secondary-subtle text-secondary mb-3">
-          <i class="bi bi-scale fs-2"></i>
-        </div>
-        <h3 class="h5">7. Appeals + Expiry</h3>
-        <p class="text-secondary mb-0">Flagged entries expire automatically and listed players can submit appeals for admin review.</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card tile h-100">
-      <div class="card-body text-center">
-        <div class="tile-icon bg-warning-subtle text-warning mb-3">
-          <i class="bi bi-patch-check fs-2"></i>
-        </div>
-        <h3 class="h5">8. Earn Recognition</h3>
-        <p class="text-secondary mb-0">Apply for badges on your profile and get verified by admins as you contribute.</p>
-      </div>
-    </div>
-  </div>
+  <% } %>
 </section>
 
 <%- include('partials/footer') %>

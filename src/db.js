@@ -116,6 +116,14 @@ export async function initSchema() {
       UNIQUE(hosted_match_id, user_id)
     );
 
+    CREATE TABLE IF NOT EXISTS hosted_match_messages (
+      id SERIAL PRIMARY KEY,
+      hosted_match_id INTEGER NOT NULL REFERENCES hosted_matches(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body TEXT NOT NULL CHECK (char_length(body) BETWEEN 1 AND 1000),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
     CREATE TABLE IF NOT EXISTS admins (
       id SERIAL PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
@@ -188,6 +196,7 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_hosted_matches_status ON hosted_matches(status);
     CREATE INDEX IF NOT EXISTS idx_hosted_match_participants_match ON hosted_match_participants(hosted_match_id);
     CREATE INDEX IF NOT EXISTS idx_hosted_match_participants_user ON hosted_match_participants(user_id);
+    CREATE INDEX IF NOT EXISTS idx_hosted_match_messages_match ON hosted_match_messages(hosted_match_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_badges_criteria ON badges(criteria_type, threshold);
     CREATE INDEX IF NOT EXISTS idx_user_badges_user ON user_badges(user_id);
     CREATE INDEX IF NOT EXISTS idx_badge_applications_user ON badge_applications(user_id);

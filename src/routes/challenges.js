@@ -331,6 +331,99 @@ router.post('/hosted-matches/:id/cancel', requireAuth, async (req, res) => {
   res.redirect('/challenges');
 });
 
+router.get('/hosted-matches/:id', requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).send('Invalid id');
+  const userId = req.session.userId;
+
+  const matchRes = await query(
+    `SELECT hm.*, u.name AS host_name, u.city AS host_city
+     FROM hosted_matches hm
+     JOIN users u ON u.id = hm.host_id
+     WHERE hm.id = $1`,
+    [id]
+  );
+  const match = matchRes.rows[0];
+  if (!match) return res.status(404).render('not_found', { title: 'Not found' });
+
+  const participants = (await query(
+    `SELECT u.id, u.name, u.city, hmp.created_at AS joined_at
+     FROM hosted_match_participants hmp
+     JOIN users u ON u.id = hmp.user_id
+     WHERE hmp.hosted_match_id = $1
+     ORDER BY hmp.created_at ASC`,
+    [id]
+  )).rows;
+
+  const isHost = match.host_id === userId;
+  const isParticipant = participants.some((p) => p.id === userId);
+  const canChat = isHost || isParticipant;
+
+  let messages = [];
+  if (canChat) {
+    messages = (await query(
+      `SELECT m.id, m.body, m.created_at, m.user_id, u.name AS user_name
+       FROM hosted_match_messages m
+       JOIN users u ON u.id = m.user_id
+       WHERE m.hosted_match_id = $1
+       ORDER BY m.created_at ASC
+       LIMIT 500`,
+      [id]
+    )).rows;
+  }
+
+  res.render('hosted_match_detail', {
+    title: match.title,
+    match,
+    participants,
+    messages,
+    isHost,
+    isParticipant,
+    canChat,
+  });
+});
+
+router.post('/hosted-matches/:id/messages', requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).send('Invalid id');
+
+  const body = String(req.body.body || '').trim();
+  if (!body) {
+    flash(req, 'error', 'Message cannot be empty.');
+    return res.redirect(`/hosted-matches/${id}#chat`);
+  }
+  if (body.length > 1000) {
+    flash(req, 'error', 'Message is too long (max 1000 characters).');
+    return res.redirect(`/hosted-matches/${id}#chat`);
+  }
+
+  const allowed = await query(
+    `SELECT 1
+     FROM hosted_matches hm
+     LEFT JOIN hosted_match_participants hmp
+       ON hmp.hosted_match_id = hm.id AND hmp.user_id = $2
+     WHERE hm.id = $1
+       AND (hm.host_id = $2 OR hmp.user_id IS NOT NULL)`,
+    [id, req.session.userId]
+  );
+  if (allowed.rowCount === 0) {
+    flash(req, 'error', 'Only the host and joined players can chat in this match.');
+    return res.redirect(`/hosted-matches/${id}#chat`);
+  }
+
+  try {
+    await query(
+      `INSERT INTO hosted_match_messages (hosted_match_id, user_id, body)
+       VALUES ($1, $2, $3)`,
+      [id, req.session.userId, body]
+    );
+  } catch (_err) {
+    flash(req, 'error', 'Could not post message.');
+  }
+
+  res.redirect(`/hosted-matches/${id}#chat`);
+});
+
 router.post('/challenges', requireAuth, async (req, res) => {
   const { opponent_id, proposed_at, location, message } = req.body;
   const opponentId = Number(opponent_id);

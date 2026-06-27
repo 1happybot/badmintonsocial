@@ -1,0 +1,148 @@
+<%- include('partials/header') %>
+
+<%
+  function fmtDate(d) { return new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); }
+  function fmtTime(d) { return new Date(d).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }); }
+%>
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/challenges">Challenges</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= match.title %></li>
+  </ol>
+</nav>
+
+<div class="card tile mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+      <div>
+        <h1 class="h4 mb-1"><%= match.title %></h1>
+        <div class="small text-secondary">
+          <i class="bi bi-person"></i> Hosted by <strong><%= match.host_name %></strong>
+          <% if (match.host_city) { %> · <i class="bi bi-geo"></i> <%= match.host_city %><% } %>
+        </div>
+      </div>
+      <span class="badge text-bg-<%= match.status === 'open' ? 'success' : match.status === 'full' ? 'warning' : 'secondary' %>">
+        <%= match.status %>
+      </span>
+    </div>
+
+    <div class="row g-3 small mb-3">
+      <div class="col-sm-6 col-md-4">
+        <div class="text-secondary"><i class="bi bi-calendar-event"></i> When</div>
+        <div><%= fmtDate(match.scheduled_at) %></div>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <div class="text-secondary"><i class="bi bi-geo-alt"></i> Where</div>
+        <div><%= match.location %></div>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <div class="text-secondary"><i class="bi bi-people"></i> Players</div>
+        <div><%= participants.length %>/<%= match.max_players %></div>
+      </div>
+    </div>
+
+    <% if (match.message) { %>
+      <p class="fst-italic text-body mb-3">“<%= match.message %>”</p>
+    <% } %>
+
+    <div class="d-flex gap-2 flex-wrap">
+      <% if (isHost && match.status !== 'cancelled') { %>
+        <form method="post" action="/hosted-matches/<%= match.id %>/cancel" class="d-inline">
+          <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i> Cancel match</button>
+        </form>
+      <% } else if (isParticipant && !isHost) { %>
+        <form method="post" action="/hosted-matches/<%= match.id %>/leave" class="d-inline">
+          <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-box-arrow-left"></i> Leave</button>
+        </form>
+      <% } else if (!isParticipant && match.status === 'open') { %>
+        <form method="post" action="/hosted-matches/<%= match.id %>/join" class="d-inline">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-box-arrow-in-right"></i> Join</button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card tile h-100">
+      <div class="card-body">
+        <h2 class="h6 mb-3"><i class="bi bi-people-fill text-primary"></i> Participants</h2>
+        <ul class="list-unstyled mb-0">
+          <% participants.forEach(function(p){ %>
+            <li class="d-flex align-items-center gap-2 py-1">
+              <span class="avatar avatar-sm <%= getAvatarClass(p.id) %>"><%= getAvatarEmoji(p.id) %></span>
+              <div class="flex-grow-1">
+                <a href="/players/<%= p.id %>" class="text-decoration-none"><%= p.name %></a>
+                <% if (p.id === match.host_id) { %>
+                  <span class="badge text-bg-primary ms-1">Host</span>
+                <% } %>
+              </div>
+            </li>
+          <% }) %>
+          <% if (participants.length === 0) { %>
+            <li class="text-secondary small">No one has joined yet.</li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card tile h-100" id="chat">
+      <div class="card-body d-flex flex-column">
+        <h2 class="h6 mb-3"><i class="bi bi-chat-dots text-primary"></i> Match chat</h2>
+
+        <% if (!canChat) { %>
+          <div class="alert alert-secondary small mb-0">
+            <i class="bi bi-lock"></i> Join this match to chat with the host and other players.
+          </div>
+        <% } else { %>
+          <div class="chat-thread mb-3" id="chatThread">
+            <% if (messages.length === 0) { %>
+              <div class="text-secondary small text-center py-4">No messages yet. Say hi 👋</div>
+            <% } else { %>
+              <% messages.forEach(function(msg){
+                   const mine = currentUser && currentUser.id === msg.user_id;
+              %>
+                <div class="chat-message <%= mine ? 'chat-message--mine' : '' %>">
+                  <div class="chat-message__meta">
+                    <strong><%= mine ? 'You' : msg.user_name %></strong>
+                    <span class="text-secondary ms-1"><%= fmtTime(msg.created_at) %></span>
+                  </div>
+                  <div class="chat-message__body"><%= msg.body %></div>
+                </div>
+              <% }) %>
+            <% } %>
+          </div>
+
+          <form method="post" action="/hosted-matches/<%= match.id %>/messages" class="mt-auto">
+            <div class="input-group">
+              <input type="text"
+                     name="body"
+                     class="form-control"
+                     placeholder="Write a message…"
+                     maxlength="1000"
+                     required
+                     autocomplete="off" />
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send"></i> Send
+              </button>
+            </div>
+            <div class="form-text small">Visible to the host and joined players only.</div>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var thread = document.getElementById('chatThread');
+    if (thread) { thread.scrollTop = thread.scrollHeight; }
+  })();
+</script>
+
+<%- include('partials/footer') %>
