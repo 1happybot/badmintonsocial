@@ -1,0 +1,237 @@
+/* Custom layer on top of Bootstrap 5 with light & dark themes. Responsive & modular. */
+
+/* Dark Mode (default) */
+:root {
+  --bs-primary-rgb: 34, 197, 94;       /* badminton court green */
+  --bs-link-color-rgb: 56, 189, 248;
+  --bs-link-hover-color-rgb: 125, 211, 252;
+  --bs-body-bg: #0b1220;
+  --bs-tertiary-bg: #111a2e;
+  --bs-border-color: #1f2a44;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+}
+
+/* Light Mode */
+[data-bs-theme="light"] {
+  --bs-primary-rgb: 22, 163, 74;       /* badminton court green (lighter) */
+  --bs-link-color-rgb: 13, 110, 253;
+  --bs-link-hover-color-rgb: 58, 154, 255;
+  --bs-body-bg: #f5f7fa;
+  --bs-tertiary-bg: #ffffff;
+  --bs-border-color: #e0e7ff;
+  --bs-body-color: #1f2937;
+  color-scheme: light;
+}
+
+html[data-bs-theme="dark"] body {
+  background:
+    /* Badminton net pattern */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      rgba(34, 197, 94, 0.03) 39px,
+      rgba(34, 197, 94, 0.03) 40px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(34, 197, 94, 0.03) 39px,
+      rgba(34, 197, 94, 0.03) 40px
+    ),
+    /* Court lighting */
+    radial-gradient(1200px 600px at 80% -10%, rgba(34, 197, 94, 0.08), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(56, 189, 248, 0.06), transparent 60%),
+    var(--bs-body-bg);
+}
+
+html[data-bs-theme="light"] body {
+  background:
+    /* Badminton court lines pattern */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 59px,
+      rgba(22, 163, 74, 0.08) 59px,
+      rgba(22, 163, 74, 0.08) 60px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 59px,
+      rgba(22, 163, 74, 0.08) 59px,
+      rgba(22, 163, 74, 0.08) 60px
+    ),
+    /* Subtle court glow */
+    radial-gradient(1400px 700px at 80% -10%, rgba(22, 163, 74, 0.06), transparent 60%),
+    radial-gradient(1000px 600px at -10% 20%, rgba(13, 110, 253, 0.04), transparent 60%),
+    var(--bs-body-bg);
+}
+
+body {
+  background-attachment: fixed;
+}
+
+.brand-emoji { font-size: 1.25rem; }
+
+.navbar { 
+  backdrop-filter: blur(8px);
+  background-color: var(--bs-tertiary-bg) !important;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* Theme toggle button */
+.theme-toggle-btn {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.95rem;
+  transition: all 200ms ease;
+}
+
+.theme-toggle-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Hero */
+.hero-wrap {
+  background:
+    linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.12), rgba(var(--bs-link-color-rgb), 0.10)),
+    var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--radius-lg);
+}
+
+/* Tile card: soft border, hover lift, responsive padding */
+.card.tile {
+  background-color: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--radius-lg);
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  padding: var(--spacing-md);
+}
+.card.tile:hover {
+  border-color: rgba(var(--bs-primary-rgb), 0.6);
+  box-shadow: 0 6px 20px rgba(var(--bs-primary-rgb), 0.1);
+}
+.player-tile:hover {
+  transform: translateY(-2px);
+}
+
+/* Feature tile icon circle */
+.tile-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Avatar circle - responsive sizing */
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+.avatar-lg {
+  width: 64px;
+  height: 64px;
+  font-size: 1.5rem;
+}
+
+.avatar-theme-smash {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.28), rgba(56, 189, 248, 0.28));
+  color: #d1fae5;
+}
+
+.avatar-theme-lightning {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.28), rgba(249, 115, 22, 0.28));
+  color: #fef3c7;
+}
+
+.avatar-theme-shield {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(16, 185, 129, 0.28));
+  color: #dbeafe;
+}
+
+.avatar-theme-fire {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(249, 115, 22, 0.25));
+  color: #fee2e2;
+}
+
+.avatar-theme-ice {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.3), rgba(45, 212, 191, 0.25));
+  color: #ecfeff;
+}
+
+.avatar-theme-comet {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.28), rgba(59, 130, 246, 0.28));
+  color: #ede9fe;
+}
+
+.avatar-theme-rocket {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.28), rgba(99, 102, 241, 0.28));
+  color: #fce7f3;
+}
+
+.avatar-theme-crown {
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.3), rgba(245, 158, 11, 0.25));
+  color: #fef3c7;
+}
+
+/* Stat card numbers */
+.stat-card .display-6 { font-weight: 800; letter-spacing: -0.02em; }
+
+/* Form control styling - works for both light & dark */
+.form-control,
+.form-select,
+.input-group-text {
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--bs-tertiary-bg);
+  border-color: rgba(var(--bs-primary-rgb), 0.8);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.15);
+}
+.form-control::placeholder {
+  color: rgba(var(--bs-body-color-rgb, 0, 0, 0), 0.5);
+}
+
+/* List group items */
+.list-group-item { 
+  color: var(--bs-body-color);
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color);
+}
+
+/* Subtle pre block */
+pre { color: var(--bs-body-color); }
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .card.tile { padding: calc(var(--spacing-md) * 0.8); }
+  .hero-wrap { padding: 1.5rem !important; }
+  .navbar-nav { gap: 0.75rem !important; }
+}
+
+@media (max-width: 576px) {
+  .card.tile { padding: var(--spacing-sm); }
+  .avatar { width: 40px; height: 40px; font-size: 0.95rem; }
+  .tile-icon { width: 50px; height: 50px; }
+  .stat-card .display-6 { font-size: 2rem; }
+}

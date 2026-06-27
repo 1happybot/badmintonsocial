@@ -1,0 +1,217 @@
+<%- include('partials/header') %>
+
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="card tile">
+      <div class="card-body p-4 p-md-5">
+        <h1 class="h3 text-center mb-1"><i class="bi bi-person-plus text-primary"></i> Create your account</h1>
+        <p class="text-secondary text-center mb-4">Join TopMinton Sverige</p>
+
+        <form method="post" action="/register">
+          <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" name="name" class="form-control" required maxlength="80" value="<%= form.name || '' %>">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" required maxlength="160" value="<%= form.email || '' %>">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required minlength="8">
+            <div class="form-text">At least 8 characters.</div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label">City in Sweden</label>
+              <select name="city" class="form-select">
+                <option value="">Select a city...</option>
+                <option value="Stockholm" <%= (form.city === 'Stockholm') ? 'selected' : '' %>>Stockholm</option>
+                <option value="Gothenburg" <%= (form.city === 'Gothenburg') ? 'selected' : '' %>>Gothenburg</option>
+                <option value="Malmö" <%= (form.city === 'Malmö') ? 'selected' : '' %>>Malmö</option>
+                <option value="Uppsala" <%= (form.city === 'Uppsala') ? 'selected' : '' %>>Uppsala</option>
+                <option value="Västerås" <%= (form.city === 'Västerås') ? 'selected' : '' %>>Västerås</option>
+                <option value="Örebro" <%= (form.city === 'Örebro') ? 'selected' : '' %>>Örebro</option>
+                <option value="Linköping" <%= (form.city === 'Linköping') ? 'selected' : '' %>>Linköping</option>
+                <option value="Helsingborg" <%= (form.city === 'Helsingborg') ? 'selected' : '' %>>Helsingborg</option>
+                <option value="Jönköping" <%= (form.city === 'Jönköping') ? 'selected' : '' %>>Jönköping</option>
+                <option value="Norrköping" <%= (form.city === 'Norrköping') ? 'selected' : '' %>>Norrköping</option>
+                <option value="Lund" <%= (form.city === 'Lund') ? 'selected' : '' %>>Lund</option>
+                <option value="Umeå" <%= (form.city === 'Umeå') ? 'selected' : '' %>>Umeå</option>
+                <option value="Gävle" <%= (form.city === 'Gävle') ? 'selected' : '' %>>Gävle</option>
+                <option value="Borås" <%= (form.city === 'Borås') ? 'selected' : '' %>>Borås</option>
+                <option value="Sundsvall" <%= (form.city === 'Sundsvall') ? 'selected' : '' %>>Sundsvall</option>
+                <option value="Other" <%= (form.city && !["Stockholm", "Gothenburg", "Malmö", "Uppsala", "Västerås", "Örebro", "Linköping", "Helsingborg", "Jönköping", "Norrköping", "Lund", "Umeå", "Gävle", "Borås", "Sundsvall"].includes(form.city)) ? 'selected' : '' %>>Other Swedish city</option>
+              </select>
+              <div class="form-text">Select your city in Sweden.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Self rating (1-10)</label>
+              <select name="skill_rating" class="form-select">
+                <% for (let rating = 1; rating <= 10; rating++) { %>
+                  <option value="<%= rating %>" <%= String(form.skill_rating || '5') === String(rating) ? 'selected' : '' %>>
+                    <%= rating %>
+                  </option>
+                <% } %>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Shuttle preference</label>
+              <select name="shuttle_preference" class="form-select">
+                <option value="feathers" <%= (form.shuttle_preference === 'feathers') ? 'selected' : '' %>>Feather</option>
+                <option value="plastics" <%= (form.shuttle_preference === 'plastics') ? 'selected' : '' %>>Plastic</option>
+                <option value="both" <%= (form.shuttle_preference === 'both' || !form.shuttle_preference) ? 'selected' : '' %>>Both</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Avatar style</label>
+              <select name="avatar_style" class="form-select">
+                <option value="smash" <%= (form.avatar_style === 'smash' || !form.avatar_style) ? 'selected' : '' %>>Smash</option>
+                <option value="lightning" <%= form.avatar_style === 'lightning' ? 'selected' : '' %>>Lightning</option>
+                <option value="shield" <%= form.avatar_style === 'shield' ? 'selected' : '' %>>Shield</option>
+                <option value="fire" <%= form.avatar_style === 'fire' ? 'selected' : '' %>>Fire</option>
+                <option value="ice" <%= form.avatar_style === 'ice' ? 'selected' : '' %>>Ice</option>
+                <option value="comet" <%= form.avatar_style === 'comet' ? 'selected' : '' %>>Comet</option>
+                <option value="rocket" <%= form.avatar_style === 'rocket' ? 'selected' : '' %>>Rocket</option>
+                <option value="crown" <%= form.avatar_style === 'crown' ? 'selected' : '' %>>Crown</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Handedness</label>
+              <select name="handedness" class="form-select">
+                <option value="right" <%= (form.handedness === 'right' || !form.handedness) ? 'selected' : '' %>>Right-handed</option>
+                <option value="left" <%= form.handedness === 'left' ? 'selected' : '' %>>Left-handed</option>
+                <option value="ambidextrous" <%= form.handedness === 'ambidextrous' ? 'selected' : '' %>>Ambidextrous</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Preferred format</label>
+              <select name="preferred_format" class="form-select">
+                <option value="singles" <%= (form.preferred_format === 'singles' || !form.preferred_format) ? 'selected' : '' %>>Singles</option>
+                <option value="doubles" <%= form.preferred_format === 'doubles' ? 'selected' : '' %>>Doubles</option>
+                <option value="both" <%= form.preferred_format === 'both' ? 'selected' : '' %>>Both</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="interestedTournaments" name="interested_in_tournaments" <%= form.interested_in_tournaments ? 'checked' : '' %>>
+                <label class="form-check-label" for="interestedTournaments">Interested in playing tournaments</label>
+              </div>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="clubPlayer" name="club_player" <%= form.club_player ? 'checked' : '' %>>
+                <label class="form-check-label" for="clubPlayer">Club player</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="teamMode" name="team_mode" <%= form.team_mode ? 'checked' : '' %>>
+                <label class="form-check-label" for="teamMode">Register as doubles team (2 people)</label>
+              </div>
+            </div>
+          </div>
+
+          <div id="partnerFields" class="row g-3 mb-3" style="display:none;">
+            <div class="col-md-5">
+              <label class="form-label">Partner name</label>
+              <input type="text" name="partner_name" class="form-control" maxlength="80" value="<%= form.partner_name || '' %>">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Partner handedness</label>
+              <select name="partner_handedness" class="form-select">
+                <option value="">Choose...</option>
+                <option value="right" <%= form.partner_handedness === 'right' ? 'selected' : '' %>>Right-handed</option>
+                <option value="left" <%= form.partner_handedness === 'left' ? 'selected' : '' %>>Left-handed</option>
+                <option value="ambidextrous" <%= form.partner_handedness === 'ambidextrous' ? 'selected' : '' %>>Ambidextrous</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Partner rating</label>
+              <input type="number" name="partner_skill_rating" class="form-control" min="1" max="10" value="<%= form.partner_skill_rating || '' %>">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Short bio</label>
+            <textarea name="bio" class="form-control" rows="3" maxlength="400" placeholder="Tell other players about your style..."><%= form.bio || '' %></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-check-lg"></i> Sign up
+          </button>
+        </form>
+
+        <p class="text-center text-secondary small mt-4 mb-0">
+          Already have an account? <a href="/login">Log in</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Handle custom city input
+  const citySelect = document.querySelector('select[name="city"]');
+  if (citySelect) {
+    const form = citySelect.closest('form');
+    if (form) {
+      // Create custom city input if it doesn't exist
+      if (!form.querySelector('input[name="cityCustom"]')) {
+        const customInput = document.createElement('input');
+        customInput.type = 'text';
+        customInput.name = 'cityCustom';
+        customInput.className = 'form-control mt-2';
+        customInput.maxLength = 80;
+        customInput.placeholder = 'Enter your city...';
+        customInput.style.display = 'none';
+        citySelect.parentElement.appendChild(customInput);
+      }
+      
+      const customInput = form.querySelector('input[name="cityCustom"]');
+      
+      // Show/hide custom input based on selection
+      citySelect.addEventListener('change', function() {
+        if (this.value === 'other' || !this.value) {
+          customInput.style.display = 'block';
+        } else {
+          customInput.style.display = 'none';
+        }
+      });
+      
+      // On form submit, use custom city value if "other" is selected
+      form.addEventListener('submit', function(e) {
+        if (citySelect.value === 'Other' || !citySelect.value) {
+          if (customInput.value.trim()) {
+            citySelect.value = customInput.value.trim();
+          }
+        }
+      });
+      
+      // Show custom input on page load if "other" was previously selected
+      if (citySelect.value === 'Other' || (!citySelect.value && customInput.value)) {
+        customInput.style.display = 'block';
+      }
+    }
+  }
+
+  const teamMode = document.getElementById('teamMode');
+  const partnerFields = document.getElementById('partnerFields');
+  const partnerNameInput = document.querySelector('input[name="partner_name"]');
+  if (teamMode && partnerFields) {
+    const syncPartnerFields = () => {
+      const enabled = teamMode.checked;
+      partnerFields.style.display = enabled ? 'flex' : 'none';
+      if (partnerNameInput) {
+        partnerNameInput.required = enabled;
+      }
+    };
+    teamMode.addEventListener('change', syncPartnerFields);
+    syncPartnerFields();
+  }
+</script>
+
+<%- include('partials/footer') %>

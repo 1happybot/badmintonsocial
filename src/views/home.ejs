@@ -1,0 +1,123 @@
+<%- include('partials/header') %>
+
+<section class="hero-wrap rounded-4 p-4 p-md-5 mb-5 text-center">
+  <div class="mx-auto" style="max-width: 720px;">
+    <span class="badge rounded-pill text-bg-primary mb-3">
+      <i class="bi bi-stars"></i> TopMinton Sverige
+    </span>
+    <h1 class="display-4 fw-bold mb-3">
+      Find great players. <span class="text-primary">Play Swedish badminton.</span>
+    </h1>
+    <p class="lead text-secondary mb-4">
+      Join Sweden's badminton community. Browse skilled players in your city, challenge them, host group matches, 
+      and keep your profile active. All in one platform.
+    </p>
+    <div class="d-flex justify-content-center flex-wrap gap-2">
+      <% if (currentUser) { %>
+        <a class="btn btn-primary btn-lg" href="/players"><i class="bi bi-people"></i> Browse players</a>
+        <a class="btn btn-outline-light btn-lg" href="/challenges"><i class="bi bi-trophy"></i> My challenges</a>
+      <% } else { %>
+        <a class="btn btn-primary btn-lg" href="/register"><i class="bi bi-person-plus"></i> Create an account</a>
+        <a class="btn btn-outline-light btn-lg" href="/login">I already have one</a>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<section class="mb-4">
+  <h2 class="h4 mb-3"><i class="bi bi-compass"></i> How TopMinton Works</h2>
+  <p class="text-secondary mb-4">From signup to fair-play moderation, here is the full player journey in simple steps.</p>
+</section>
+
+<section class="row g-4">
+  <div class="col-md-6 col-lg-4">
+    <div class="card tile h-100">
+      <div class="card-body text-center">
+        <div class="tile-icon bg-primary-subtle text-primary mb-3">
+          <i class="bi bi-person-plus fs-2"></i>
+        </div>
+        <h3 class="h5">1. Register</h3>
+        <p class="text-secondary mb-0">Create your player or doubles-team account with skill rating, format preference, and partner details.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card tile h-100">
+      <div class="card-body text-center">
+        <div class="tile-icon bg-warning-subtle text-warning mb-3">
+          <i class="bi bi-person-gear fs-2"></i>
+        </div>
+        <h3 class="h5">2. Customize Profile</h3>
+        <p class="text-secondary mb-0">Pick cool avatar styles, set handedness, update team info, and tune your badminton identity anytime.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card tile h-100">
+      <div class="card-body text-center">
+        <div class="tile-icon bg-info-subtle text-info mb-3">
+          <i class="bi bi-send fs-2"></i>
+        </div>
+        <h3 class="h5">3. Challenge</h3>
+        <p class="text-secondary mb-0">Pick another registered player and propose a date, time and court.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card tile h-100">
+      <div class="card-body text-center">
+        <div class="tile-icon bg-success-subtle text-success mb-3">
+          <i class="bi bi-people-fill fs-2"></i>
+        </div>
+        <h3 class="h5">4. Host Matches</h3>
+        <p class="text-secondary mb-0">Create group matches for 2–12 players, set the location, and let players join.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card tile h-100">
+      <div class="card-body text-center">
+        <div class="tile-icon bg-primary-subtle text-primary mb-3">
+          <i class="bi bi-chat-heart fs-2"></i>
+        </div>
+        <h3 class="h5">5. Rate Match Experience</h3>
+        <p class="text-secondary mb-0">Submit post-match feedback from 1–10 and report no-shows or payment issues when needed.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card tile h-100">
+      <div class="card-body text-center">
+        <div class="tile-icon bg-danger-subtle text-danger mb-3">
+          <i class="bi bi-shield-exclamation fs-2"></i>
+        </div>
+        <h3 class="h5">6. Fair-Play Protection</h3>
+        <p class="text-secondary mb-0">Automated anti-spam checks, cancellation limits, and Wall-of-Shame visibility keep the community fair.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card tile h-100">
+      <div class="card-body text-center">
+        <div class="tile-icon bg-secondary-subtle text-secondary mb-3">
+          <i class="bi bi-scale fs-2"></i>
+        </div>
+        <h3 class="h5">7. Appeals + Expiry</h3>
+        <p class="text-secondary mb-0">Flagged entries expire automatically and listed players can submit appeals for admin review.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <div class="card tile h-100">
+      <div class="card-body text-center">
+        <div class="tile-icon bg-warning-subtle text-warning mb-3">
+          <i class="bi bi-patch-check fs-2"></i>
+        </div>
+        <h3 class="h5">8. Earn Recognition</h3>
+        <p class="text-secondary mb-0">Apply for badges on your profile and get verified by admins as you contribute.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

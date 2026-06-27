@@ -1,0 +1,94 @@
+<%- include('partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <div>
+    <h1 class="mb-1"><i class="bi bi-people"></i> Players</h1>
+    <p class="text-secondary mb-0"><%= players.length %> player<%= players.length === 1 ? '' : 's' %> ready for a match</p>
+  </div>
+</div>
+
+<form method="get" action="/players" class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-sm-5">
+        <label class="form-label small text-secondary mb-1">City</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+          <input type="text" name="city" class="form-control" placeholder="Filter by city" value="<%= filters.city %>">
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label small text-secondary mb-1">Rating range (1-10)</label>
+        <div class="d-flex gap-2">
+          <select name="min_rating" class="form-select">
+            <option value="">Min</option>
+            <% for (let r = 1; r <= 10; r++) { %>
+              <option value="<%= r %>" <%= String(filters.min_rating) === String(r) ? 'selected' : '' %>><%= r %></option>
+            <% } %>
+          </select>
+          <select name="max_rating" class="form-select">
+            <option value="">Max</option>
+            <% for (let r = 1; r <= 10; r++) { %>
+              <option value="<%= r %>" <%= String(filters.max_rating) === String(r) ? 'selected' : '' %>><%= r %></option>
+            <% } %>
+          </select>
+        </div>
+      </div>
+      <div class="col-sm-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-funnel"></i> Filter</button>
+        <a class="btn btn-outline-secondary" href="/players" title="Reset"><i class="bi bi-x-lg"></i></a>
+      </div>
+    </div>
+  </div>
+</form>
+
+<% if (players.length === 0) { %>
+  <div class="text-center py-5">
+    <i class="bi bi-search display-1 text-secondary opacity-50"></i>
+    <p class="mt-3 mb-0 text-secondary">No other players match your filters yet.</p>
+  </div>
+<% } else { %>
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+    <% players.forEach(function(p){
+      const ratingColor = p.skill_rating >= 8 ? 'warning' : p.skill_rating >= 5 ? 'info' : 'success';
+      const avatar = getAvatarEmoji(p.avatar_style);
+    %>
+      <div class="col">
+        <div class="card tile player-tile h-100">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex align-items-center mb-3">
+              <div class="avatar <%= getAvatarClass(p.avatar_style) %> me-3"><%= avatar %></div>
+              <div class="flex-grow-1 min-w-0">
+                <h5 class="card-title mb-1 text-truncate">
+                  <a href="/players/<%= p.id %>" class="text-reset text-decoration-none stretched-link-target"><%= p.name %></a>
+                </h5>
+                <div class="small text-secondary text-truncate">
+                  <i class="bi bi-geo-alt"></i> <%= p.city || 'Unknown city' %>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <span class="badge text-bg-<%= ratingColor %>"><i class="bi bi-bar-chart"></i> Rating <%= p.skill_rating %>/10</span>
+              <span class="badge text-bg-secondary"><i class="bi bi-activity"></i> <%= p.preferred_format %></span>
+              <% if (p.team_mode) { %>
+                <span class="badge text-bg-primary"><i class="bi bi-people-fill"></i> Team</span>
+              <% } %>
+            </div>
+
+            <div class="mt-auto d-flex gap-2">
+              <a class="btn btn-primary flex-grow-1" href="/challenges/new/<%= p.id %>">
+                <i class="bi bi-send"></i> Challenge
+              </a>
+              <a class="btn btn-outline-secondary" href="/players/<%= p.id %>" title="View profile">
+                <i class="bi bi-person-circle"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,112 @@
+<%- include('partials/header') %>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card tile">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h1 class="h4 mb-0"><i class="bi bi-person-gear"></i> Edit Profile</h1>
+          <a href="/players/<%= form.id %>" class="btn btn-outline-secondary btn-sm">Back to profile</a>
+        </div>
+
+        <form method="post" action="/players/<%= form.id %>/edit" class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Avatar style</label>
+            <select name="avatar_style" class="form-select">
+              <% ['smash','lightning','shield','fire','ice','comet','rocket','crown'].forEach(function(style){ %>
+                <option value="<%= style %>" <%= form.avatar_style === style ? 'selected' : '' %>><%= style %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Handedness</label>
+            <select name="handedness" class="form-select">
+              <option value="right" <%= form.handedness === 'right' ? 'selected' : '' %>>Right-handed</option>
+              <option value="left" <%= form.handedness === 'left' ? 'selected' : '' %>>Left-handed</option>
+              <option value="ambidextrous" <%= form.handedness === 'ambidextrous' ? 'selected' : '' %>>Ambidextrous</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Preferred format</label>
+            <select name="preferred_format" class="form-select">
+              <option value="singles" <%= form.preferred_format === 'singles' ? 'selected' : '' %>>Singles</option>
+              <option value="doubles" <%= form.preferred_format === 'doubles' ? 'selected' : '' %>>Doubles</option>
+              <option value="both" <%= form.preferred_format === 'both' ? 'selected' : '' %>>Both</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Shuttle preference</label>
+            <select name="shuttle_preference" class="form-select">
+              <option value="feathers" <%= form.shuttle_preference === 'feathers' ? 'selected' : '' %>>Feather</option>
+              <option value="plastics" <%= form.shuttle_preference === 'plastics' ? 'selected' : '' %>>Plastic</option>
+              <option value="both" <%= form.shuttle_preference === 'both' ? 'selected' : '' %>>Both</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Bio</label>
+            <input type="text" name="bio" class="form-control" maxlength="400" value="<%= form.bio || '' %>">
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="editInterestedTournaments" name="interested_in_tournaments" <%= form.interested_in_tournaments ? 'checked' : '' %>>
+              <label class="form-check-label" for="editInterestedTournaments">Interested in tournaments</label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="editClubPlayer" name="club_player" <%= form.club_player ? 'checked' : '' %>>
+              <label class="form-check-label" for="editClubPlayer">Club player</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="editTeamMode" name="team_mode" <%= form.team_mode ? 'checked' : '' %>>
+              <label class="form-check-label" for="editTeamMode">Enable doubles team mode</label>
+            </div>
+          </div>
+
+          <div id="editPartnerFields" class="row g-3" style="display:none;">
+            <div class="col-md-5">
+              <label class="form-label">Partner name</label>
+              <input type="text" name="partner_name" class="form-control" maxlength="80" value="<%= form.partner_name || '' %>">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Partner handedness</label>
+              <select name="partner_handedness" class="form-select">
+                <option value="">Choose...</option>
+                <option value="right" <%= form.partner_handedness === 'right' ? 'selected' : '' %>>Right-handed</option>
+                <option value="left" <%= form.partner_handedness === 'left' ? 'selected' : '' %>>Left-handed</option>
+                <option value="ambidextrous" <%= form.partner_handedness === 'ambidextrous' ? 'selected' : '' %>>Ambidextrous</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Partner rating</label>
+              <input type="number" name="partner_skill_rating" class="form-control" min="1" max="10" value="<%= form.partner_skill_rating || '' %>">
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i> Save profile</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const teamToggle = document.getElementById('editTeamMode');
+  const partnerFields = document.getElementById('editPartnerFields');
+  const partnerName = document.querySelector('input[name="partner_name"]');
+  if (teamToggle && partnerFields) {
+    const sync = () => {
+      const enabled = teamToggle.checked;
+      partnerFields.style.display = enabled ? 'flex' : 'none';
+      if (partnerName) partnerName.required = enabled;
+    };
+    teamToggle.addEventListener('change', sync);
+    sync();
+  }
+</script>
+
+<%- include('partials/footer') %>

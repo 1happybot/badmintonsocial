@@ -1,0 +1,100 @@
+<%- include('partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <div>
+    <h1 class="mb-1"><i class="bi bi-exclamation-triangle text-danger"></i> Wall of Shame</h1>
+    <p class="text-secondary mb-0">Visibility for repeated no-shows, non-payment incidents, and cancellation abuse</p>
+  </div>
+</div>
+
+<div class="card tile mb-4">
+  <div class="card-body py-3 small text-secondary">
+    <i class="bi bi-info-circle"></i>
+    Fairness policy: incidents older than <strong><%= expiryWindowDays %> days</strong> expire automatically. Players can submit appeals for admin review.
+  </div>
+</div>
+
+<% if (isCurrentUserFlagged) { %>
+  <div class="card tile mb-4">
+    <div class="card-body">
+      <h2 class="h6 mb-3"><i class="bi bi-envelope-paper"></i> Submit Appeal</h2>
+      <% if (myAppeal && myAppeal.status === 'pending') { %>
+        <div class="text-secondary small">You already have a pending appeal submitted on <%= new Date(myAppeal.created_at).toLocaleString() %>.</div>
+      <% } else { %>
+        <form method="post" action="/wall-of-shame/appeals" class="row g-2 align-items-end">
+          <div class="col-md-9">
+            <label class="form-label small text-secondary mb-1">Why should this entry be removed?</label>
+            <textarea name="reason" class="form-control" rows="2" maxlength="500" required placeholder="Explain context, evidence, and why this should be reconsidered."></textarea>
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-primary w-100" type="submit">Submit appeal</button>
+          </div>
+        </form>
+      <% } %>
+
+      <% if (myAppeal && myAppeal.status !== 'pending') { %>
+        <div class="small text-secondary mt-2">
+          Last appeal: <span class="badge text-bg-<%= myAppeal.status === 'approved' ? 'success' : 'danger' %>"><%= myAppeal.status %></span>
+          <% if (myAppeal.valid_until) { %>
+            · hidden until <%= new Date(myAppeal.valid_until).toLocaleDateString() %>
+          <% } %>
+          <% if (myAppeal.reviewed_note) { %>
+            <div class="mt-1"><strong>Admin note:</strong> <%= myAppeal.reviewed_note %></div>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+<% } %>
+
+<% if (!offenders || offenders.length === 0) { %>
+  <div class="card tile">
+    <div class="card-body text-center text-secondary py-5">
+      <i class="bi bi-shield-check fs-1 d-block mb-2"></i>
+      No flagged players right now.
+    </div>
+  </div>
+<% } else { %>
+  <div class="card tile">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>City</th>
+              <th>No-shows</th>
+              <th>Non-payment</th>
+              <th>Cancellations (30d)</th>
+              <th>Avg feedback</th>
+              <th>Appeal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% offenders.forEach(function(o){ %>
+              <tr>
+                <td><a href="/players/<%= o.id %>" class="text-reset"><strong><%= o.name %></strong></a></td>
+                <td class="text-secondary"><%= o.city || 'Unknown' %></td>
+                <td><span class="badge text-bg-<%= o.no_show_count > 0 ? 'danger' : 'secondary' %>"><%= o.no_show_count %></span></td>
+                <td><span class="badge text-bg-<%= o.non_payment_count > 0 ? 'danger' : 'secondary' %>"><%= o.non_payment_count %></span></td>
+                <td><span class="badge text-bg-<%= o.cancellations_30d >= 3 ? 'warning' : 'secondary' %>"><%= o.cancellations_30d %></span></td>
+                <td class="text-secondary"><%= Number(o.avg_rating || 0).toFixed(1) %>/10</td>
+                <td>
+                  <% if (o.appeal_status === 'pending') { %>
+                    <span class="badge text-bg-info">Under appeal</span>
+                  <% } else if (o.appeal_status === 'rejected') { %>
+                    <span class="badge text-bg-danger">Appeal rejected</span>
+                  <% } else { %>
+                    <span class="text-secondary small">—</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

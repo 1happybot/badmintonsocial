@@ -1,0 +1,337 @@
+<%- include('partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <h1 class="h3 mb-0"><i class="bi bi-shield-check"></i> Admin Dashboard</h1>
+  <form method="post" action="/admin/logout" class="d-inline">
+    <button class="btn btn-outline-secondary btn-sm" type="submit">
+      <i class="bi bi-box-arrow-right"></i> Admin logout
+    </button>
+  </form>
+</div>
+
+<div class="card tile mb-4">
+  <div class="card-body">
+    <h2 class="h5 mb-3"><i class="bi bi-inbox"></i> Pending Badge Applications</h2>
+    <% if (!badgeApplications || badgeApplications.length === 0) { %>
+      <div class="text-secondary">No pending badge applications.</div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Badge</th>
+              <th>Note</th>
+              <th>Submitted</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% badgeApplications.forEach(function(app){ %>
+              <tr>
+                <td>
+                  <a href="/players/<%= app.user_id %>" class="text-reset text-decoration-none"><%= app.user_name %></a>
+                </td>
+                <td><strong><i class="bi <%= getBadgeIcon(app.badge_slug, app.badge_name) %> me-1"></i><%= app.badge_name %></strong></td>
+                <td class="small text-secondary"><%= app.note || '—' %></td>
+                <td class="small text-secondary"><%= new Date(app.created_at).toLocaleString() %></td>
+                <td>
+                  <form method="post" action="/admin/badge-applications/<%= app.id %>/approve" class="d-inline">
+                    <button class="btn btn-sm btn-outline-success me-1" type="submit">
+                      <i class="bi bi-check-circle"></i> Approve
+                    </button>
+                  </form>
+                  <form method="post" action="/admin/badge-applications/<%= app.id %>/reject" class="d-inline">
+                    <button class="btn btn-sm btn-outline-danger" type="submit">
+                      <i class="bi bi-x-circle"></i> Reject
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="card tile mb-4">
+  <div class="card-body">
+    <h2 class="h5 mb-3"><i class="bi bi-clock-history"></i> Badge Application History</h2>
+    <% if (!badgeApplicationHistory || badgeApplicationHistory.length === 0) { %>
+      <div class="text-secondary">No reviewed badge applications yet.</div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Badge</th>
+              <th>Status</th>
+              <th>Reviewed By</th>
+              <th>Reviewed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% badgeApplicationHistory.forEach(function(app){ %>
+              <tr>
+                <td>
+                  <a href="/players/<%= app.user_id %>" class="text-reset text-decoration-none"><%= app.user_name %></a>
+                  <% if (app.note) { %>
+                    <div class="small text-secondary"><%= app.note %></div>
+                  <% } %>
+                </td>
+                <td><strong><i class="bi <%= getBadgeIcon(app.badge_slug, app.badge_name) %> me-1"></i><%= app.badge_name %></strong></td>
+                <td>
+                  <span class="badge text-bg-<%= app.status === 'approved' ? 'success' : 'danger' %>">
+                    <%= app.status %>
+                  </span>
+                </td>
+                <td class="small text-secondary"><%= app.reviewer_name || 'Unknown' %></td>
+                <td class="small text-secondary"><%= app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="card tile mb-4">
+  <div class="card-body">
+    <h2 class="h5 mb-3"><i class="bi bi-scale"></i> Pending Wall-of-Shame Appeals</h2>
+    <% if (!pendingWallAppeals || pendingWallAppeals.length === 0) { %>
+      <div class="text-secondary">No pending appeals.</div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Appeal</th>
+              <th>Incidents</th>
+              <th>Submitted</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% pendingWallAppeals.forEach(function(a){ %>
+              <tr>
+                <td><a href="/players/<%= a.user_id %>" class="text-reset"><strong><%= a.user_name %></strong></a></td>
+                <td class="small text-secondary"><%= a.reason %></td>
+                <td class="small text-secondary">No-show: <%= a.no_show_count %> · Non-payment: <%= a.non_payment_count %> · Cancels(30d): <%= a.cancellations_30d %></td>
+                <td class="small text-secondary"><%= new Date(a.created_at).toLocaleString() %></td>
+                <td>
+                  <form method="post" action="/admin/wall-appeals/<%= a.id %>/approve" class="d-inline">
+                    <button class="btn btn-sm btn-outline-success me-1" type="submit">Approve</button>
+                  </form>
+                  <form method="post" action="/admin/wall-appeals/<%= a.id %>/reject" class="d-inline">
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-5">
+    <div class="card tile">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-patch-plus"></i> Create Badge</h2>
+        <form method="post" action="/admin/badges" class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Badge name</label>
+            <input class="form-control" name="name" required maxlength="80" placeholder="Example: Marathon Player">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Badge slug (unique)</label>
+            <input class="form-control" name="slug" required maxlength="80" pattern="[a-z0-9-]+" placeholder="marathon-player">
+            <div class="form-text">Use lowercase letters, numbers, and dashes.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="2" maxlength="220" placeholder="How this badge is earned"></textarea>
+          </div>
+          <div class="col-md-7">
+            <label class="form-label">Criteria type</label>
+            <select class="form-select" name="criteria_type" required>
+              <% criteriaOptions.forEach(function(opt){ %>
+                <option value="<%= opt %>"><%= opt %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Threshold</label>
+            <input type="number" min="1" class="form-control" name="threshold" value="1" required>
+          </div>
+          <div class="col-12">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-plus-circle"></i> Create badge</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card tile">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-award"></i> Existing Badges</h2>
+        <% if (!badges || badges.length === 0) { %>
+          <div class="text-secondary">No badges created yet.</div>
+        <% } else { %>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Criteria</th>
+                  <th>Threshold</th>
+                  <th>Awarded</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% badges.forEach(function(b){ %>
+                  <tr>
+                    <td>
+                      <strong><i class="bi <%= getBadgeIcon(b.slug, b.name) %> me-1"></i><%= b.name %></strong>
+                      <div class="small text-secondary"><%= b.slug %></div>
+                    </td>
+                    <td><code><%= b.criteria_type %></code></td>
+                    <td><%= b.threshold %></td>
+                    <td><%= b.awarded_count %></td>
+                    <td>
+                      <span class="badge text-bg-<%= b.is_active ? 'success' : 'secondary' %>">
+                        <%= b.is_active ? 'Active' : 'Disabled' %>
+                      </span>
+                    </td>
+                    <td>
+                      <a class="btn btn-sm btn-outline-primary me-1" href="/admin/badges/<%= b.id %>/edit">
+                        <i class="bi bi-pencil"></i> Edit
+                      </a>
+                      <form method="post" action="/admin/badges/<%= b.id %>/toggle" class="d-inline">
+                        <button class="btn btn-sm btn-outline-<%= b.is_active ? 'danger' : 'success' %>" type="submit">
+                          <i class="bi bi-power"></i> <%= b.is_active ? 'Deactivate' : 'Activate' %>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card tile">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-person-plus"></i> Create Admin</h2>
+        <form method="post" action="/admin/admins" class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" name="name" required maxlength="80" placeholder="Admin name">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="email" required maxlength="160" placeholder="admin@example.com">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">New password</label>
+            <input type="password" class="form-control" name="password" required minlength="8">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Confirm password</label>
+            <input type="password" class="form-control" name="confirm_password" required minlength="8">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Your current admin password</label>
+            <input type="password" class="form-control" name="current_admin_password" required minlength="8">
+            <div class="form-text">Required to securely authorize creating another admin account.</div>
+          </div>
+          <div class="col-12">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-shield-plus"></i> Create admin</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card tile">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-people"></i> Admin Accounts</h2>
+        <% if (!admins || admins.length === 0) { %>
+          <div class="text-secondary">No admins found.</div>
+        <% } else { %>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% admins.forEach(function(a){ %>
+                  <tr>
+                    <td><strong><%= a.name %></strong></td>
+                    <td><%= a.email %></td>
+                    <td>
+                      <span class="badge text-bg-<%= a.is_active ? 'success' : 'secondary' %>">
+                        <%= a.is_active ? 'Active' : 'Disabled' %>
+                      </span>
+                    </td>
+                    <td class="text-secondary small"><%= new Date(a.created_at).toLocaleString() %></td>
+                    <td>
+                      <% if (currentAdmin && currentAdmin.id !== a.id) { %>
+                        <form method="post" action="/admin/admins/<%= a.id %>/toggle" class="d-inline">
+                          <button
+                            class="btn btn-sm btn-outline-<%= a.is_active ? 'warning' : 'success' %> me-1"
+                            type="submit"
+                          >
+                            <i class="bi bi-person-<%= a.is_active ? 'dash' : 'check' %>"></i>
+                            <%= a.is_active ? 'Disable' : 'Enable' %>
+                          </button>
+                        </form>
+                        <form
+                          method="post"
+                          action="/admin/admins/<%= a.id %>/delete"
+                          class="d-inline"
+                          onsubmit="return confirm('Delete this admin account? This cannot be undone.');"
+                        >
+                          <button class="btn btn-sm btn-outline-danger" type="submit">
+                            <i class="bi bi-trash"></i> Delete
+                          </button>
+                        </form>
+                      <% } else { %>
+                        <span class="text-secondary small">Current account</span>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
