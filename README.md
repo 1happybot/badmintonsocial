@@ -156,6 +156,10 @@ The app now supports split env files for cleaner switching:
 - `SENDGRID_FROM_EMAIL` — verified sender email used for signup confirmation emails
 - `APP_BASE_URL` — public app URL used in confirmation links (example: https://topminton.akshay.im)
 
+Local testing note:
+- You can temporarily bypass phone verification for hosting/joining sessions by adding user ids/emails in `config/hosting-phone-bypass-allowlist.yml`.
+- This bypass is ignored in production (`NODE_ENV=production`).
+
 Twilio setup note:
 - Enable `SMS` channel in your Twilio Verify service for phone verification.
 - Configure a verified sender in Twilio SendGrid for signup confirmation emails.

@@ -16,7 +16,7 @@ function getTwilioSmsErrorMessage(err) {
 
   const code = Number(err.code);
   if (code === 20003) {
-    return 'Twilio authentication failed. Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.';
+    return 'Twilio authentication failed. Ensure TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN are the live Account SID and Auth Token (not API key), with no quotes/spaces, and redeploy so runtime picks up updated vars.';
   }
   if (code === 20404) {
     return 'Twilio Verify service SID was not found. Check TWILIO_VERIFY_SERVICE_SID.';

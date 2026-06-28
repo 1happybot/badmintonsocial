@@ -3,6 +3,8 @@
 <%
   function fmtDate(d) { return new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); }
   function fmtTime(d) { return new Date(d).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }); }
+  function fmtDay(d) { return new Date(d).toLocaleString(undefined, { weekday: 'short', day: '2-digit' }); }
+  function fmtMonth(d) { return new Date(d).toLocaleString(undefined, { month: 'short' }); }
 %>
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -12,117 +14,106 @@
   </ol>
 </nav>
 
-<div class="card tile mb-4">
-  <div class="card-body">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+<section class="event-hero card tile mb-4 overflow-hidden">
+  <div class="event-hero__bg"></div>
+  <div class="card-body position-relative">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
       <div>
-        <h1 class="h4 mb-1"><%= match.title %></h1>
-        <div class="small text-secondary">
+        <span class="badge rounded-pill text-bg-light text-dark mb-3">
+          <i class="bi bi-calendar-event"></i> Hosted session
+        </span>
+        <h1 class="display-6 mb-2"><%= match.title %></h1>
+        <div class="small text-light-emphasis mb-3">
           <i class="bi bi-person"></i> Hosted by <strong><%= match.host_name %></strong>
-          <% if (match.host_city) { %> · <i class="bi bi-geo"></i> <%= match.host_city %><% } %>
+          <% if (match.host_city) { %><span class="mx-1">·</span><i class="bi bi-geo"></i> <%= match.host_city %><% } %>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge rounded-pill text-bg-<%= match.status === 'open' ? 'success' : match.status === 'full' ? 'warning' : match.status === 'completed' ? 'primary' : 'secondary' %>"><%= match.status %></span>
+          <span class="badge rounded-pill text-bg-dark-subtle"><i class="bi bi-people"></i> <%= participants.length %>/<%= match.max_players %> joined</span>
+          <span class="badge rounded-pill text-bg-dark-subtle"><i class="bi bi-bullseye"></i> Level <%= match.match_level || 5 %>/10</span>
+          <span class="badge rounded-pill text-bg-dark-subtle"><i class="bi bi-feather"></i> <%= match.shuttle_type === 'plastics' ? 'Plastics' : 'Feathers' %></span>
         </div>
       </div>
-      <span class="badge text-bg-<%= match.status === 'open' ? 'success' : match.status === 'full' ? 'warning' : match.status === 'completed' ? 'primary' : 'secondary' %>">
-        <%= match.status %>
-      </span>
-    </div>
 
-    <div class="row g-3 small mb-3">
-      <div class="col-sm-6 col-md-4">
-        <div class="text-secondary"><i class="bi bi-calendar-event"></i> When</div>
-        <div><%= fmtDate(match.scheduled_at) %></div>
-      </div>
-      <div class="col-sm-6 col-md-4">
-        <div class="text-secondary"><i class="bi bi-geo-alt"></i> Where</div>
-        <div><%= match.location %></div>
-      </div>
-      <div class="col-sm-6 col-md-4">
-        <div class="text-secondary"><i class="bi bi-people"></i> Players</div>
-        <div><%= participants.length %>/<%= match.max_players %></div>
-      </div>
-      <div class="col-sm-6 col-md-4">
-        <div class="text-secondary"><i class="bi bi-bullseye"></i> Match level</div>
-        <div><%= match.match_level || 5 %>/10</div>
-      </div>
-      <div class="col-sm-6 col-md-4">
-        <div class="text-secondary"><i class="bi bi-feather"></i> Shuttles</div>
-        <div><%= match.shuttle_type === 'plastics' ? 'Plastics' : 'Feathers' %></div>
-      </div>
-    </div>
-
-    <% if (match.message) { %>
-      <p class="fst-italic text-body mb-3">“<%= match.message %>”</p>
-    <% } %>
-
-    <div class="d-flex gap-2 flex-wrap">
-      <% if (isHost && (match.status === 'open' || match.status === 'full')) { %>
-        <form method="post" action="/hosted-matches/<%= match.id %>/complete" class="d-inline"
-              onsubmit="return confirm('Mark this match as completed? 25 points will be awarded to you. Participant points are awarded after you mark attendance.');">
-          <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check2-circle"></i> Mark completed</button>
-        </form>
-      <% } %>
-      <% if (isHost && match.status === 'completed') { %>
-        <a href="/hosted-matches/<%= match.id %>/participants/status" class="btn btn-primary btn-sm">
-          <i class="bi bi-list-check"></i> Mark participants paid/no-show
-        </a>
-      <% } %>
-      <% if (isHost && match.status !== 'cancelled' && match.status !== 'completed') { %>
-        <form method="post" action="/hosted-matches/<%= match.id %>/cancel" class="d-inline">
-          <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i> Cancel match</button>
-        </form>
-      <% } else if (isParticipant && !isHost && match.status !== 'completed' && match.status !== 'cancelled') { %>
-        <form method="post" action="/hosted-matches/<%= match.id %>/leave" class="d-inline">
-          <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-box-arrow-left"></i> Leave</button>
-        </form>
-      <% } else if (!isParticipant && match.status === 'open') { %>
-        <form method="post" action="/hosted-matches/<%= match.id %>/join" class="d-inline">
-          <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-box-arrow-in-right"></i> Join</button>
-        </form>
-      <% } %>
-    </div>
-  </div>
-</div>
-
-<div class="row g-4">
-  <div class="col-lg-4">
-    <div class="card tile h-100">
-      <div class="card-body">
-        <h2 class="h6 mb-3"><i class="bi bi-people-fill text-primary"></i> Participants</h2>
-        <ul class="list-unstyled mb-0">
-          <% participants.forEach(function(p){ %>
-            <li class="d-flex align-items-center gap-2 py-1">
-              <span class="avatar avatar-sm <%= getAvatarClass(p.id) %>"><%= getAvatarEmoji(p.id) %></span>
-              <div class="flex-grow-1">
-                <a href="/players/<%= p.id %>" class="text-decoration-none"><%= p.name %></a>
-                <% if (p.id === match.host_id) { %>
-                  <span class="badge text-bg-primary ms-1">Host</span>
-                <% } %>
-                <% if (p.id !== match.host_id && match.status === 'completed') { %>
-                  <span class="badge text-bg-<%= p.attendance_status === 'attended' ? 'success' : p.attendance_status === 'no_show' ? 'danger' : 'secondary' %> ms-1">
-                    <%= p.attendance_status === 'attended' ? 'Attended' : p.attendance_status === 'no_show' ? 'No-show' : 'Attendance pending' %>
-                  </span>
-                  <span class="badge text-bg-<%= p.payment_status === 'paid' ? 'success' : p.payment_status === 'no_show' ? 'danger' : 'secondary' %> ms-1">
-                    <%= p.payment_status === 'paid' ? 'Paid' : p.payment_status === 'no_show' ? 'Did not pay' : 'Payment pending' %>
-                  </span>
-                <% } %>
-                <% if (p.id !== match.host_id && p.note && (isHost || currentUser.id === p.id)) { %>
-                  <div class="small text-secondary mt-1"><i class="bi bi-chat-left-text"></i> <%= p.note %></div>
-                <% } %>
-              </div>
-            </li>
-          <% }) %>
-          <% if (participants.length === 0) { %>
-            <li class="text-secondary small">No one has joined yet.</li>
-          <% } %>
-        </ul>
+      <div class="event-date-badge text-center">
+        <div class="event-date-badge__month"><%= fmtMonth(match.scheduled_at) %></div>
+        <div class="event-date-badge__day"><%= fmtDay(match.scheduled_at) %></div>
+        <div class="event-date-badge__time"><%= fmtTime(match.scheduled_at) %></div>
       </div>
     </div>
   </div>
+</section>
 
+<div class="row g-4 align-items-start">
   <div class="col-lg-8">
-    <div class="card tile h-100" id="chat">
+    <div class="card tile mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-info-circle text-primary"></i> Session details</h2>
+        <div class="row g-3 mb-2">
+          <div class="col-md-6">
+            <div class="event-meta-item">
+              <span class="event-meta-item__icon"><i class="bi bi-calendar-check"></i></span>
+              <div>
+                <div class="small text-secondary">When</div>
+                <div><%= fmtDate(match.scheduled_at) %></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="event-meta-item">
+              <span class="event-meta-item__icon"><i class="bi bi-geo-alt"></i></span>
+              <div>
+                <div class="small text-secondary">Location</div>
+                <div><%= match.location %></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <% if (match.message) { %>
+          <div class="event-note mt-3">
+            <div class="small text-secondary mb-1">Host message</div>
+            <p class="mb-0 fst-italic">"<%= match.message %>"</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="card tile mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-people-fill text-primary"></i> Participants</h2>
+        <% if (participants.length === 0) { %>
+          <div class="small text-secondary">No one has joined yet.</div>
+        <% } else { %>
+          <ul class="list-unstyled mb-0">
+            <% participants.forEach(function(p){ %>
+              <li class="event-participant d-flex align-items-center gap-2 py-2">
+                <span class="avatar avatar-sm <%= getAvatarClass(p.id) %>"><%= getAvatarEmoji(p.id) %></span>
+                <div class="flex-grow-1">
+                  <a href="/players/<%= p.id %>" class="text-decoration-none"><%= p.name %></a>
+                  <% if (p.id === match.host_id) { %><span class="badge text-bg-primary ms-1">Host</span><% } %>
+                  <% if (p.id !== match.host_id && match.status === 'completed') { %>
+                    <span class="badge text-bg-<%= p.attendance_status === 'attended' ? 'success' : p.attendance_status === 'no_show' ? 'danger' : 'secondary' %> ms-1">
+                      <%= p.attendance_status === 'attended' ? 'Attended' : p.attendance_status === 'no_show' ? 'No-show' : 'Attendance pending' %>
+                    </span>
+                    <span class="badge text-bg-<%= p.payment_status === 'paid' ? 'success' : p.payment_status === 'no_show' ? 'danger' : 'secondary' %> ms-1">
+                      <%= p.payment_status === 'paid' ? 'Paid' : p.payment_status === 'no_show' ? 'Did not pay' : 'Payment pending' %>
+                    </span>
+                  <% } %>
+                  <% if (p.id !== match.host_id && p.note && (isHost || currentUser.id === p.id)) { %>
+                    <div class="small text-secondary mt-1"><i class="bi bi-chat-left-text"></i> <%= p.note %></div>
+                  <% } %>
+                </div>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="card tile" id="chat">
       <div class="card-body d-flex flex-column">
-        <h2 class="h6 mb-3"><i class="bi bi-chat-dots text-primary"></i> Match chat</h2>
+        <h2 class="h5 mb-3"><i class="bi bi-chat-dots text-primary"></i> Session chat</h2>
 
         <% if (!canChat) { %>
           <div class="alert alert-secondary small mb-0">
@@ -131,7 +122,7 @@
         <% } else { %>
           <div class="chat-thread mb-3" id="chatThread">
             <% if (messages.length === 0) { %>
-              <div class="text-secondary small text-center py-4">No messages yet. Say hi 👋</div>
+              <div class="text-secondary small text-center py-4">No messages yet. Say hi.</div>
             <% } else { %>
               <% messages.forEach(function(msg){
                    const mine = currentUser && currentUser.id === msg.user_id;
@@ -152,7 +143,7 @@
               <input type="text"
                      name="body"
                      class="form-control"
-                     placeholder="Write a message…"
+                     placeholder="Write a message..."
                      maxlength="1000"
                      required
                      autocomplete="off" />
@@ -163,6 +154,52 @@
             <div class="form-text small">Visible to the host and joined players only.</div>
           </form>
         <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card tile event-sidebar">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-secondary mb-3">Quick actions</h2>
+        <div class="d-grid gap-2">
+          <% if (isHost && (match.status === 'open' || match.status === 'full')) { %>
+            <form method="post" action="/hosted-matches/<%= match.id %>/complete" class="d-inline"
+                  onsubmit="return confirm('Mark this match as completed? 25 points will be awarded to you. Participant points are awarded after you mark attendance.');">
+              <button type="submit" class="btn btn-success w-100"><i class="bi bi-check2-circle"></i> Mark completed</button>
+            </form>
+          <% } %>
+
+          <% if (isHost && match.status === 'completed') { %>
+            <a href="/hosted-matches/<%= match.id %>/participants/status" class="btn btn-primary w-100">
+              <i class="bi bi-list-check"></i> Mark participants paid/no-show
+            </a>
+          <% } %>
+
+          <% if (isHost && match.status !== 'cancelled' && match.status !== 'completed') { %>
+            <form method="post" action="/hosted-matches/<%= match.id %>/cancel" class="d-inline">
+              <button type="submit" class="btn btn-outline-danger w-100"><i class="bi bi-x-circle"></i> Cancel match</button>
+            </form>
+          <% } else if (isParticipant && !isHost && match.status !== 'completed' && match.status !== 'cancelled') { %>
+            <form method="post" action="/hosted-matches/<%= match.id %>/leave" class="d-inline">
+              <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-box-arrow-left"></i> Leave session</button>
+            </form>
+          <% } else if (!isParticipant && match.status === 'open') { %>
+            <form method="post" action="/hosted-matches/<%= match.id %>/join" class="d-inline">
+              <button type="submit" class="btn btn-primary w-100"><i class="bi bi-box-arrow-in-right"></i> Join session</button>
+            </form>
+          <% } %>
+        </div>
+
+        <hr>
+
+        <div class="small text-secondary mb-2">Session snapshot</div>
+        <ul class="list-unstyled small mb-0 d-grid gap-2">
+          <li><i class="bi bi-geo-alt"></i> <%= match.location %></li>
+          <li><i class="bi bi-people"></i> <%= participants.length %> of <%= match.max_players %> slots filled</li>
+          <li><i class="bi bi-bullseye"></i> Level <%= match.match_level || 5 %>/10</li>
+          <li><i class="bi bi-feather"></i> <%= match.shuttle_type === 'plastics' ? 'Plastics' : 'Feathers' %></li>
+        </ul>
       </div>
     </div>
   </div>

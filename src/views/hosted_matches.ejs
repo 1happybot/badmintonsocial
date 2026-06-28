@@ -106,7 +106,7 @@
         <div class="card tile h-100">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start mb-2">
-              <h3 class="h6 mb-0"><a href="/hosted-matches/<%= m.id %>" class="text-decoration-none"><%= m.title %></a></h3>
+              <h3 class="h6 mb-0"><a href="/hosted-matches/<%= m.id %>" target="_blank" rel="noopener noreferrer" class="text-decoration-none"><%= m.title %></a></h3>
               <span class="badge text-bg-<%= m.status === 'open' ? 'success' : m.status === 'full' ? 'warning' : 'secondary' %>"><%= m.status %></span>
             </div>
             <div class="small text-secondary mb-3">

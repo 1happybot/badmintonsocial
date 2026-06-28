@@ -15,6 +15,7 @@ const HOSTED_ATTENDANCE_STATUSES = new Set(['undecided', 'attended', 'no_show'])
 const HOSTED_PAYMENT_STATUSES = new Set(['undecided', 'paid', 'no_show']);
 const HOSTED_SHUTTLE_TYPES = new Set(['feathers', 'plastics']);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const HOSTING_PHONE_BYPASS_ALLOWLIST_PATH = path.join(__dirname, '../../config/hosting-phone-bypass-allowlist.yml');
 
 function loadHostedLocations() {
   const fallback = [
@@ -46,6 +47,37 @@ function loadHostedLocations() {
 }
 
 const HOSTED_LOCATIONS = loadHostedLocations();
+
+function loadHostingPhoneBypassAllowlist() {
+  const ids = new Set();
+  const emails = new Set();
+  try {
+    const content = fs.readFileSync(HOSTING_PHONE_BYPASS_ALLOWLIST_PATH, 'utf8');
+    for (const rawLine of content.split('\n')) {
+      const line = rawLine.trim();
+      if (!line.startsWith('- ')) continue;
+      const value = line.slice(2).split('#')[0].trim();
+      if (!value) continue;
+      if (/^\d+$/.test(value)) {
+        ids.add(Number(value));
+      } else {
+        emails.add(value.toLowerCase());
+      }
+    }
+  } catch (_err) {
+    // Missing file means no local bypass users are configured.
+  }
+  return { ids, emails };
+}
+
+function isHostingPhoneBypassAllowedForUser(userId, email) {
+  if (process.env.NODE_ENV === 'production') return false;
+  const allowlist = loadHostingPhoneBypassAllowlist();
+  if (allowlist.ids.has(Number(userId))) return true;
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) return false;
+  return allowlist.emails.has(normalizedEmail);
+}
 
 async function getPolicyCounters(userId) {
   const pendingOutgoingRes = await query(
@@ -101,14 +133,23 @@ async function enforcePolicyGuards(req, res, redirectTo) {
   return true;
 }
 
-async function enforceVerifiedPhone(req, res, redirectTo) {
+async function enforceVerifiedPhone(req, res, redirectTo, options = {}) {
+  const allowAdminBypass = Boolean(options.allowAdminBypass);
+  const allowLocalHostingBypass = Boolean(options.allowLocalHostingBypass);
+  if (allowAdminBypass && req.session.adminId) {
+    return true;
+  }
+
   const phoneRes = await query(
-    `SELECT phone_verified_at
+    `SELECT phone_verified_at, email
      FROM users
      WHERE id = $1`,
     [req.session.userId]
   );
   const row = phoneRes.rows[0];
+  if (allowLocalHostingBypass && row && isHostingPhoneBypassAllowedForUser(req.session.userId, row.email)) {
+    return true;
+  }
   if (!row || !row.phone_verified_at) {
     flash(req, 'error', 'Verify your Swedish phone number in your profile before joining matches or challenges.');
     res.redirect(redirectTo);
@@ -233,7 +274,10 @@ router.get('/challenges/new/:opponentId', requireAuth, async (req, res) => {
 });
 
 router.post('/hosted-matches', requireAuth, async (req, res) => {
-  if (!(await enforceVerifiedPhone(req, res, `/players/${req.session.userId}/edit`))) return;
+  if (!(await enforceVerifiedPhone(req, res, `/players/${req.session.userId}/edit`, {
+    allowAdminBypass: true,
+    allowLocalHostingBypass: true,
+  }))) return;
 
   const title = String(req.body.title || '').trim();
   const location = String(req.body.location || '').trim();
@@ -298,7 +342,9 @@ router.post('/hosted-matches', requireAuth, async (req, res) => {
 });
 
 router.post('/hosted-matches/:id/join', requireAuth, async (req, res) => {
-  if (!(await enforceVerifiedPhone(req, res, `/players/${req.session.userId}/edit`))) return;
+  if (!(await enforceVerifiedPhone(req, res, `/players/${req.session.userId}/edit`, {
+    allowLocalHostingBypass: true,
+  }))) return;
 
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).send('Invalid id');
