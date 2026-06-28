@@ -166,20 +166,22 @@ Twilio setup note:
 
 ### Default Admin Credentials (Development)
 
-If the `admins` table is empty on startup, the app auto-creates one admin account.
+On each startup, the app ensures an admin account exists with credentials from environment variables (or defaults if not set).
 
 - Admin login URL: `/admin/login`
 - Default email: `admin@topminton.se`
 - Default password: `admin12345`
 - Default name: `Platform Admin`
 
-For production, always override these defaults with environment variables:
+To change admin credentials at any time, update your environment variables and restart:
 
 ```bash
 ADMIN_EMAIL=your-admin-email@example.com
-ADMIN_PASSWORD=use-a-long-random-password
+ADMIN_PASSWORD=your-secure-password
 ADMIN_NAME=Your Admin Name
 ```
+
+Then restart the app (`npm run dev` or `npm run prod`). The admin account will be created or updated with the new credentials immediately on startup.
 
 ## Project Structure
 
@@ -321,10 +323,6 @@ On Railway, use the **Postgres** service → **Data** → **Query** terminal to 
 # Change port in .env or run on a different port
 PORT=4000 npm run dev
 ```
-
-### Password reset / forgot password
-
-Currently, this app does not support password reset. Users must create a new account with a different email. Future versions could add this feature.
 
 ## Security Notes
 

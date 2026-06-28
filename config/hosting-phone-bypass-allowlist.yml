@@ -1,0 +1,13 @@
+# Local testing only: users in this allowlist can host sessions without verified phone.
+# Active only when NODE_ENV is NOT production.
+# Add one value per line under '- '. Use either numeric user id or email.
+
+# Example by user id:
+# - 42
+
+# Example by email:
+# - demo.player1@topminton.se
+
+- nuclearnukex@gmail.com
+- sanchari2192@gmail.com
+- engineerakki11@gmail.com

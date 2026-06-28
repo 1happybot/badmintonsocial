@@ -332,13 +332,14 @@ async function ensureDefaultAdmin() {
   const password = String(process.env.ADMIN_PASSWORD || 'admin12345');
   const name = String(process.env.ADMIN_NAME || 'Platform Admin').trim();
 
-  const existing = await pool.query('SELECT id FROM admins WHERE email = $1', [email]);
-  if (existing.rowCount > 0) return;
-
   const passwordHash = await bcrypt.hash(password, 12);
+
+  // Upsert: create or update admin with env var credentials
   await pool.query(
-    `INSERT INTO admins (email, password_hash, name)
-     VALUES ($1, $2, $3)`,
+    `INSERT INTO admins (email, password_hash, name, is_active)
+     VALUES ($1, $2, $3, TRUE)
+     ON CONFLICT (email)
+     DO UPDATE SET password_hash = EXCLUDED.password_hash, name = EXCLUDED.name, is_active = TRUE`,
     [email, passwordHash, name]
   );
 }
