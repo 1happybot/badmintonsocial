@@ -214,9 +214,12 @@
     syncPartnerFields();
   }
 
-  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.forEach(function (el) {
-    new bootstrap.Tooltip(el);
+  window.addEventListener('load', function() {
+    if (!window.bootstrap || !bootstrap.Tooltip) return;
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function (el) {
+      new bootstrap.Tooltip(el);
+    });
   });
 </script>
 
