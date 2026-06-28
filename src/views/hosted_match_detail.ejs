@@ -7,7 +7,7 @@
 
 <nav aria-label="breadcrumb" class="mb-3">
   <ol class="breadcrumb mb-0">
-    <li class="breadcrumb-item"><a href="/challenges">Challenges</a></li>
+    <li class="breadcrumb-item"><a href="/hosted-matches">Hosted sessions</a></li>
     <li class="breadcrumb-item active" aria-current="page"><%= match.title %></li>
   </ol>
 </nav>
@@ -40,6 +40,14 @@
         <div class="text-secondary"><i class="bi bi-people"></i> Players</div>
         <div><%= participants.length %>/<%= match.max_players %></div>
       </div>
+      <div class="col-sm-6 col-md-4">
+        <div class="text-secondary"><i class="bi bi-bullseye"></i> Match level</div>
+        <div><%= match.match_level || 5 %>/10</div>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <div class="text-secondary"><i class="bi bi-feather"></i> Shuttles</div>
+        <div><%= match.shuttle_type === 'plastics' ? 'Plastics' : 'Feathers' %></div>
+      </div>
     </div>
 
     <% if (match.message) { %>
@@ -49,9 +57,14 @@
     <div class="d-flex gap-2 flex-wrap">
       <% if (isHost && (match.status === 'open' || match.status === 'full')) { %>
         <form method="post" action="/hosted-matches/<%= match.id %>/complete" class="d-inline"
-              onsubmit="return confirm('Mark this match as completed? 25 points will be awarded to you and 10 points to each joined player.');">
+              onsubmit="return confirm('Mark this match as completed? 25 points will be awarded to you. Participant points are awarded after you mark attendance.');">
           <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check2-circle"></i> Mark completed</button>
         </form>
+      <% } %>
+      <% if (isHost && match.status === 'completed') { %>
+        <a href="/hosted-matches/<%= match.id %>/participants/status" class="btn btn-primary btn-sm">
+          <i class="bi bi-list-check"></i> Mark participants paid/no-show
+        </a>
       <% } %>
       <% if (isHost && match.status !== 'cancelled' && match.status !== 'completed') { %>
         <form method="post" action="/hosted-matches/<%= match.id %>/cancel" class="d-inline">
@@ -83,6 +96,17 @@
                 <a href="/players/<%= p.id %>" class="text-decoration-none"><%= p.name %></a>
                 <% if (p.id === match.host_id) { %>
                   <span class="badge text-bg-primary ms-1">Host</span>
+                <% } %>
+                <% if (p.id !== match.host_id && match.status === 'completed') { %>
+                  <span class="badge text-bg-<%= p.attendance_status === 'attended' ? 'success' : p.attendance_status === 'no_show' ? 'danger' : 'secondary' %> ms-1">
+                    <%= p.attendance_status === 'attended' ? 'Attended' : p.attendance_status === 'no_show' ? 'No-show' : 'Attendance pending' %>
+                  </span>
+                  <span class="badge text-bg-<%= p.payment_status === 'paid' ? 'success' : p.payment_status === 'no_show' ? 'danger' : 'secondary' %> ms-1">
+                    <%= p.payment_status === 'paid' ? 'Paid' : p.payment_status === 'no_show' ? 'Did not pay' : 'Payment pending' %>
+                  </span>
+                <% } %>
+                <% if (p.id !== match.host_id && p.note && (isHost || currentUser.id === p.id)) { %>
+                  <div class="small text-secondary mt-1"><i class="bi bi-chat-left-text"></i> <%= p.note %></div>
                 <% } %>
               </div>
             </li>

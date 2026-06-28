@@ -1,4 +1,7 @@
 import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { pool, query } from '../db.js';
 import { requireAuth, flash } from '../middleware.js';
 import { grantEligibleBadges } from '../badges.js';
@@ -8,6 +11,41 @@ const router = express.Router();
 const MAX_PENDING_OUTGOING = 8;
 const MAX_CREATED_LAST_HOUR = 10;
 const MAX_CANCELLATIONS_30D = 6;
+const HOSTED_ATTENDANCE_STATUSES = new Set(['undecided', 'attended', 'no_show']);
+const HOSTED_PAYMENT_STATUSES = new Set(['undecided', 'paid', 'no_show']);
+const HOSTED_SHUTTLE_TYPES = new Set(['feathers', 'plastics']);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+function loadHostedLocations() {
+  const fallback = [
+    'Sollentuna Rackethall',
+    'Kista Rackethall',
+    'Komethallen',
+    'Enskede Rackethall',
+    'Frescati Racketcenter',
+    'Sundbyberg Rackethall',
+    'Skogas Rackethall',
+    'BadmintonStadion Skanstul',
+    'Other',
+  ];
+  try {
+    const filePath = path.join(__dirname, '../../config/hosted-match-locations.yml');
+    const content = fs.readFileSync(filePath, 'utf8');
+    const items = content
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('- '))
+      .map((line) => line.slice(2).trim())
+      .filter(Boolean);
+    if (items.length === 0) return fallback;
+    if (!items.includes('Other')) items.push('Other');
+    return items;
+  } catch (_err) {
+    return fallback;
+  }
+}
+
+const HOSTED_LOCATIONS = loadHostedLocations();
 
 async function getPolicyCounters(userId) {
   const pendingOutgoingRes = await query(
@@ -57,6 +95,22 @@ async function enforcePolicyGuards(req, res, redirectTo) {
   }
   if (counters.cancellations30d >= MAX_CANCELLATIONS_30D) {
     flash(req, 'error', 'Account temporarily restricted due to repeated cancellations. Contact admins if this is wrong.');
+    res.redirect(redirectTo);
+    return false;
+  }
+  return true;
+}
+
+async function enforceVerifiedPhone(req, res, redirectTo) {
+  const phoneRes = await query(
+    `SELECT phone_verified_at
+     FROM users
+     WHERE id = $1`,
+    [req.session.userId]
+  );
+  const row = phoneRes.rows[0];
+  if (!row || !row.phone_verified_at) {
+    flash(req, 'error', 'Verify your Swedish phone number in your profile before joining matches or challenges.');
     res.redirect(redirectTo);
     return false;
   }
@@ -118,6 +172,21 @@ router.get('/challenges', requireAuth, async (req, res) => {
 
   const policyCounters = await getPolicyCounters(userId);
 
+  res.render('challenges', {
+    title: 'Challenges',
+    incoming,
+    outgoing,
+    upcoming,
+    history,
+    feedbackGivenKeys,
+    policyCounters,
+  });
+});
+
+router.get('/hosted-matches', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  const policyCounters = await getPolicyCounters(userId);
+
   const hostedOpen = (await query(
     `SELECT hm.*, u.name AS host_name,
             COUNT(hmp.id)::int AS joined_count,
@@ -144,16 +213,12 @@ router.get('/challenges', requireAuth, async (req, res) => {
     [userId]
   )).rows;
 
-  res.render('challenges', {
-    title: 'Challenges',
-    incoming,
-    outgoing,
-    upcoming,
-    history,
-    feedbackGivenKeys,
+  res.render('hosted_matches', {
+    title: 'Host a Session',
     policyCounters,
     hostedOpen,
     myHosted,
+    hostedLocations: HOSTED_LOCATIONS,
   });
 });
 
@@ -168,35 +233,51 @@ router.get('/challenges/new/:opponentId', requireAuth, async (req, res) => {
 });
 
 router.post('/hosted-matches', requireAuth, async (req, res) => {
+  if (!(await enforceVerifiedPhone(req, res, `/players/${req.session.userId}/edit`))) return;
+
   const title = String(req.body.title || '').trim();
   const location = String(req.body.location || '').trim();
+  const shuttleType = String(req.body.shuttle_type || '').trim().toLowerCase();
+  const matchLevel = Number.parseInt(req.body.match_level, 10);
   const message = String(req.body.message || '').trim() || null;
   const maxPlayers = Number.parseInt(req.body.max_players, 10);
   const when = new Date(req.body.scheduled_at || '');
 
   if (!title || !location || !req.body.scheduled_at) {
     flash(req, 'error', 'Title, date/time, and location are required to host a match.');
-    return res.redirect('/challenges');
+    return res.redirect('/hosted-matches');
   }
   if (Number.isNaN(when.getTime()) || when.getTime() < Date.now() - 60 * 1000) {
     flash(req, 'error', 'Hosted match must be scheduled for the future.');
-    return res.redirect('/challenges');
+    return res.redirect('/hosted-matches');
   }
   if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 12) {
     flash(req, 'error', 'Max players must be between 2 and 12.');
-    return res.redirect('/challenges');
+    return res.redirect('/hosted-matches');
+  }
+  if (!HOSTED_LOCATIONS.includes(location)) {
+    flash(req, 'error', 'Please select a valid location from the list.');
+    return res.redirect('/hosted-matches');
+  }
+  if (!HOSTED_SHUTTLE_TYPES.has(shuttleType)) {
+    flash(req, 'error', 'Please choose feathers or plastics for shuttles.');
+    return res.redirect('/hosted-matches');
+  }
+  if (!Number.isInteger(matchLevel) || matchLevel < 1 || matchLevel > 10) {
+    flash(req, 'error', 'Match level must be between 1 and 10.');
+    return res.redirect('/hosted-matches');
   }
 
-  if (!(await enforcePolicyGuards(req, res, '/challenges'))) return;
+  if (!(await enforcePolicyGuards(req, res, '/hosted-matches'))) return;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const insertMatch = await client.query(
-      `INSERT INTO hosted_matches (host_id, title, scheduled_at, location, max_players, message)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO hosted_matches (host_id, title, scheduled_at, location, shuttle_type, match_level, max_players, message)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id`,
-      [req.session.userId, title, when.toISOString(), location, maxPlayers, message]
+      [req.session.userId, title, when.toISOString(), location, shuttleType, matchLevel, maxPlayers, message]
     );
     await client.query(
       `INSERT INTO hosted_match_participants (hosted_match_id, user_id)
@@ -213,10 +294,12 @@ router.post('/hosted-matches', requireAuth, async (req, res) => {
     client.release();
   }
 
-  res.redirect('/challenges');
+  res.redirect('/hosted-matches');
 });
 
 router.post('/hosted-matches/:id/join', requireAuth, async (req, res) => {
+  if (!(await enforceVerifiedPhone(req, res, `/players/${req.session.userId}/edit`))) return;
+
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) return res.status(400).send('Invalid id');
 
@@ -266,7 +349,7 @@ router.post('/hosted-matches/:id/join', requireAuth, async (req, res) => {
     client.release();
   }
 
-  res.redirect('/challenges');
+  res.redirect('/hosted-matches');
 });
 
 router.post('/hosted-matches/:id/leave', requireAuth, async (req, res) => {
@@ -310,7 +393,7 @@ router.post('/hosted-matches/:id/leave', requireAuth, async (req, res) => {
   } finally {
     client.release();
   }
-  res.redirect('/challenges');
+  res.redirect('/hosted-matches');
 });
 
 router.post('/hosted-matches/:id/complete', requireAuth, async (req, res) => {
@@ -334,11 +417,6 @@ router.post('/hosted-matches/:id/complete', requireAuth, async (req, res) => {
       [id]
     );
 
-    const partRes = await client.query(
-      `SELECT user_id FROM hosted_match_participants WHERE hosted_match_id = $1`,
-      [id]
-    );
-
     await awardPoints(client, {
       userId: m.host_id,
       points: POINTS_HOST,
@@ -346,20 +424,9 @@ router.post('/hosted-matches/:id/complete', requireAuth, async (req, res) => {
       sourceType: 'hosted_match',
       sourceId: id,
     });
-    for (const row of partRes.rows) {
-      if (row.user_id === m.host_id) continue;
-      await awardPoints(client, {
-        userId: row.user_id,
-        points: POINTS_ATTEND,
-        reason: 'attended',
-        sourceType: 'hosted_match',
-        sourceId: id,
-      });
-      await maybeRewardReferrer(client, row.user_id);
-    }
 
     await client.query('COMMIT');
-    flash(req, 'success', `Match completed. ${POINTS_HOST} points awarded to you and ${POINTS_ATTEND} to each player who joined.`);
+    flash(req, 'success', `Match completed. ${POINTS_HOST} points awarded to you. Mark each participant as attended or no-show to settle player points.`);
   } catch (err) {
     await client.query('ROLLBACK');
     if (err && err.message === 'forbidden') {
@@ -392,7 +459,130 @@ router.post('/hosted-matches/:id/cancel', requireAuth, async (req, res) => {
   } else {
     flash(req, 'success', 'Hosted match cancelled.');
   }
-  res.redirect('/challenges');
+  res.redirect('/hosted-matches');
+});
+
+router.get('/hosted-matches/:id/participants/status', requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).send('Invalid id');
+
+  const matchRes = await query(
+    `SELECT hm.*, u.name AS host_name
+     FROM hosted_matches hm
+     JOIN users u ON u.id = hm.host_id
+     WHERE hm.id = $1`,
+    [id]
+  );
+  const match = matchRes.rows[0];
+  if (!match) return res.status(404).render('not_found', { title: 'Not found' });
+  if (match.host_id !== req.session.userId) {
+    flash(req, 'error', 'Only the host can mark participant status.');
+    return res.redirect(`/hosted-matches/${id}`);
+  }
+  if (match.status !== 'completed') {
+    flash(req, 'error', 'You can mark participant status only after the match is completed.');
+    return res.redirect(`/hosted-matches/${id}`);
+  }
+
+  const participants = (await query(
+    `SELECT u.id, u.name, u.city,
+            COALESCE(hf.attendance_status, 'undecided') AS attendance_status,
+            COALESCE(hf.payment_status, 'undecided') AS payment_status,
+            hf.note
+     FROM hosted_match_participants hmp
+     JOIN users u ON u.id = hmp.user_id
+     LEFT JOIN hosted_match_feedback hf
+       ON hf.hosted_match_id = hmp.hosted_match_id
+      AND hf.from_user_id = $2
+      AND hf.to_user_id = hmp.user_id
+     WHERE hmp.hosted_match_id = $1
+       AND hmp.user_id <> $2
+     ORDER BY u.name ASC`,
+    [id, req.session.userId]
+  )).rows;
+
+  res.render('hosted_match_mark_status', {
+    title: 'Mark participant status',
+    match,
+    participants,
+  });
+});
+
+router.post('/hosted-matches/:id/participants/status', requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).send('Invalid id');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const matchRes = await client.query(
+      `SELECT * FROM hosted_matches WHERE id = $1 FOR UPDATE`,
+      [id]
+    );
+    const match = matchRes.rows[0];
+    if (!match) throw new Error('not_found');
+    if (match.host_id !== req.session.userId) throw new Error('forbidden');
+    if (match.status !== 'completed') throw new Error('not_completed');
+
+    const participantsRes = await client.query(
+      `SELECT user_id
+       FROM hosted_match_participants
+       WHERE hosted_match_id = $1
+         AND user_id <> $2`,
+      [id, req.session.userId]
+    );
+
+    for (const row of participantsRes.rows) {
+      const participantId = row.user_id;
+      const attendanceStatus = String(req.body[`attendance_${participantId}`] || 'undecided');
+      const paymentStatus = String(req.body[`payment_${participantId}`] || 'undecided');
+      const note = String(req.body[`note_${participantId}`] || '').trim() || null;
+
+      const safeAttendanceStatus = HOSTED_ATTENDANCE_STATUSES.has(attendanceStatus) ? attendanceStatus : 'undecided';
+      const safePaymentStatus = HOSTED_PAYMENT_STATUSES.has(paymentStatus) ? paymentStatus : 'undecided';
+
+      await client.query(
+        `INSERT INTO hosted_match_feedback (
+           hosted_match_id, from_user_id, to_user_id, attendance_status, payment_status, note
+         )
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (hosted_match_id, from_user_id, to_user_id)
+         DO UPDATE SET
+           attendance_status = EXCLUDED.attendance_status,
+           payment_status = EXCLUDED.payment_status,
+           note = EXCLUDED.note,
+           updated_at = NOW()`,
+        [id, req.session.userId, participantId, safeAttendanceStatus, safePaymentStatus, note]
+      );
+
+      if (safeAttendanceStatus === 'attended') {
+        await awardPoints(client, {
+          userId: participantId,
+          points: POINTS_ATTEND,
+          reason: 'attended',
+          sourceType: 'hosted_match',
+          sourceId: id,
+        });
+        await maybeRewardReferrer(client, participantId);
+      }
+    }
+
+    await client.query('COMMIT');
+    flash(req, 'success', 'Participant status saved. Attendance points were awarded only to players marked as attended.');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    if (err && err.message === 'forbidden') {
+      flash(req, 'error', 'Only the host can mark participant status.');
+    } else if (err && err.message === 'not_completed') {
+      flash(req, 'error', 'You can mark participant status only after match completion.');
+    } else {
+      flash(req, 'error', 'Could not save participant status.');
+    }
+  } finally {
+    client.release();
+  }
+
+  res.redirect(`/hosted-matches/${id}`);
 });
 
 router.get('/hosted-matches/:id', requireAuth, async (req, res) => {
@@ -411,12 +601,19 @@ router.get('/hosted-matches/:id', requireAuth, async (req, res) => {
   if (!match) return res.status(404).render('not_found', { title: 'Not found' });
 
   const participants = (await query(
-    `SELECT u.id, u.name, u.city, hmp.created_at AS joined_at
+    `SELECT u.id, u.name, u.city, hmp.created_at AS joined_at,
+            COALESCE(hf.attendance_status, 'undecided') AS attendance_status,
+            COALESCE(hf.payment_status, 'undecided') AS payment_status,
+            hf.note
      FROM hosted_match_participants hmp
      JOIN users u ON u.id = hmp.user_id
+     LEFT JOIN hosted_match_feedback hf
+       ON hf.hosted_match_id = hmp.hosted_match_id
+      AND hf.from_user_id = $2
+      AND hf.to_user_id = hmp.user_id
      WHERE hmp.hosted_match_id = $1
      ORDER BY hmp.created_at ASC`,
-    [id]
+    [id, match.host_id]
   )).rows;
 
   const isHost = match.host_id === userId;
@@ -489,6 +686,8 @@ router.post('/hosted-matches/:id/messages', requireAuth, async (req, res) => {
 });
 
 router.post('/challenges', requireAuth, async (req, res) => {
+  if (!(await enforceVerifiedPhone(req, res, `/players/${req.session.userId}/edit`))) return;
+
   const { opponent_id, proposed_at, location, message } = req.body;
   const opponentId = Number(opponent_id);
 
@@ -549,7 +748,10 @@ async function updateStatus(req, res, newStatus) {
   res.redirect('/challenges');
 }
 
-router.post('/challenges/:id/accept', requireAuth, (req, res) => updateStatus(req, res, 'accepted'));
+router.post('/challenges/:id/accept', requireAuth, async (req, res) => {
+  if (!(await enforceVerifiedPhone(req, res, `/players/${req.session.userId}/edit`))) return;
+  return updateStatus(req, res, 'accepted');
+});
 router.post('/challenges/:id/decline', requireAuth, (req, res) => updateStatus(req, res, 'declined'));
 router.post('/challenges/:id/cancel', requireAuth, (req, res) => updateStatus(req, res, 'cancelled'));
 

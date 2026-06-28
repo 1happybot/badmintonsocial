@@ -106,6 +106,68 @@ body {
   border-radius: var(--radius-lg);
 }
 
+.home-hero {
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(var(--bs-link-color-rgb), 0.28), transparent 55%),
+    linear-gradient(120deg, rgba(var(--bs-primary-rgb), 0.9), rgba(var(--bs-link-color-rgb), 0.8));
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.18);
+}
+
+.home-hero__content {
+  min-height: 100%;
+}
+
+.home-hero__badge {
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+.home-hero__accent {
+  color: #e0fbff;
+}
+
+.home-hero__stats {
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.home-stat-card {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.home-match-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.home-match-card::after {
+  content: '';
+  position: absolute;
+  inset: auto -25% -40% -25%;
+  height: 60%;
+  background: radial-gradient(ellipse at center, rgba(var(--bs-primary-rgb), 0.18), transparent 70%);
+  pointer-events: none;
+}
+
+.players-hero .card-body,
+.challenges-hero .card-body {
+  background:
+    linear-gradient(130deg, rgba(var(--bs-primary-rgb), 0.08), rgba(var(--bs-link-color-rgb), 0.05));
+  border-radius: var(--radius-md);
+}
+
+details > summary {
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
 /* Tile card: soft border, hover lift, responsive padding */
 .card.tile {
   background-color: var(--bs-tertiary-bg);
@@ -341,6 +403,9 @@ pre { color: var(--bs-body-color); }
   .card.tile { padding: calc(var(--spacing-md) * 0.8); }
   .hero-wrap { padding: 1.5rem !important; }
   .navbar-nav { gap: 0.75rem !important; }
+  .home-hero__actions .btn {
+    width: 100%;
+  }
 }
 
 @media (max-width: 576px) {
@@ -349,4 +414,7 @@ pre { color: var(--bs-body-color); }
   .tile-icon { width: 50px; height: 50px; }
   .stat-card .display-6 { font-size: 2rem; }
   .journey-step-icon { width: 60px; height: 60px; font-size: 1.5rem; }
+  .home-hero .display-3 {
+    font-size: 2.2rem;
+  }
 }

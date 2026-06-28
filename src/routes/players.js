@@ -1,6 +1,12 @@
 import express from 'express';
 import { query } from '../db.js';
 import { flash, requireAuth } from '../middleware.js';
+import {
+  checkVerificationCode,
+  maskPhone,
+  normalizeSwedishPhone,
+  sendVerificationCode,
+} from '../phone-verification.js';
 
 export function createPlayerRouter(deps = {}) {
   const {
@@ -55,7 +61,7 @@ export function createPlayerRouter(deps = {}) {
               u.avatar_style, u.handedness, u.preferred_format, u.shuttle_preference,
               u.interested_in_tournaments, u.club_player, u.team_mode,
               u.partner_name, u.partner_handedness, u.partner_skill_rating,
-              u.topminton_points, u.referral_code,
+              u.topminton_points, u.referral_code, u.phone_number, u.phone_verified_at,
               COALESCE((SELECT ROUND(AVG(cf.rating)::numeric, 1) FROM challenge_feedback cf WHERE cf.to_user_id = u.id), 0) AS avg_feedback_rating,
               COALESCE((SELECT COUNT(*)::int FROM challenge_feedback cf WHERE cf.to_user_id = u.id), 0) AS feedback_count
        FROM users u
@@ -210,7 +216,8 @@ export function createPlayerRouter(deps = {}) {
     const playerRes = await runQuery(
       `SELECT id, name, city, skill_rating, bio, avatar_style, handedness, preferred_format,
               shuttle_preference, interested_in_tournaments, club_player, team_mode,
-              partner_name, partner_handedness, partner_skill_rating
+              partner_name, partner_handedness, partner_skill_rating,
+              phone_number, phone_verified_at
        FROM users
        WHERE id = $1`,
       [id]
@@ -221,6 +228,7 @@ export function createPlayerRouter(deps = {}) {
     return res.render('player_edit', {
       title: 'Edit Profile',
       form: player,
+      maskedPhone: maskPhone(player.phone_number),
     });
   });
 
@@ -291,6 +299,87 @@ export function createPlayerRouter(deps = {}) {
 
     flash(req, 'success', 'Profile updated successfully.');
     return res.redirect(`/players/${id}`);
+  });
+
+  router.post('/players/:id/phone/send-code', requireAuthMiddleware, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).send('Invalid id');
+    if (req.session.userId !== id) return res.status(403).send('Forbidden');
+
+    const normalizedPhone = normalizeSwedishPhone(req.body.phone_number);
+    if (!normalizedPhone) {
+      flash(req, 'error', 'Please enter a valid Swedish phone number. Example: +46701234567 or 0701234567.');
+      return res.redirect(`/players/${id}/edit`);
+    }
+
+    const inUse = await runQuery(
+      `SELECT id
+       FROM users
+       WHERE phone_number = $1 AND id <> $2`,
+      [normalizedPhone, id]
+    );
+    if (inUse.rowCount > 0) {
+      flash(req, 'error', 'That phone number is already used by another account.');
+      return res.redirect(`/players/${id}/edit`);
+    }
+
+    try {
+      await sendVerificationCode(normalizedPhone);
+      req.session.phoneVerification = {
+        userId: id,
+        phoneNumber: normalizedPhone,
+        requestedAt: Date.now(),
+      };
+      flash(req, 'success', `Verification code sent to ${maskPhone(normalizedPhone)}.`);
+    } catch (err) {
+      if (err && err.message === 'twilio_not_configured') {
+        flash(req, 'error', 'Phone verification service is not configured yet. Please set Twilio Verify environment variables.');
+      } else {
+        flash(req, 'error', 'Could not send verification code. Please try again.');
+      }
+    }
+
+    return res.redirect(`/players/${id}/edit`);
+  });
+
+  router.post('/players/:id/phone/verify', requireAuthMiddleware, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).send('Invalid id');
+    if (req.session.userId !== id) return res.status(403).send('Forbidden');
+
+    const verification = req.session.phoneVerification;
+    if (!verification || verification.userId !== id || !verification.phoneNumber) {
+      flash(req, 'error', 'No phone verification request found. Request a code first.');
+      return res.redirect(`/players/${id}/edit`);
+    }
+
+    const code = String(req.body.verification_code || '').trim();
+    if (!/^\d{4,10}$/.test(code)) {
+      flash(req, 'error', 'Enter a valid verification code.');
+      return res.redirect(`/players/${id}/edit`);
+    }
+
+    try {
+      const check = await checkVerificationCode(verification.phoneNumber, code);
+      if (String(check.status) !== 'approved') {
+        flash(req, 'error', 'Verification code is incorrect or expired.');
+        return res.redirect(`/players/${id}/edit`);
+      }
+
+      await runQuery(
+        `UPDATE users
+         SET phone_number = $1,
+             phone_verified_at = NOW()
+         WHERE id = $2`,
+        [verification.phoneNumber, id]
+      );
+      req.session.phoneVerification = null;
+      flash(req, 'success', 'Phone number verified successfully.');
+    } catch (_err) {
+      flash(req, 'error', 'Could not verify code. Please try again.');
+    }
+
+    return res.redirect(`/players/${id}/edit`);
   });
 
   return router;

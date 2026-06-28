@@ -1,0 +1,146 @@
+<%- include('partials/header') %>
+
+<%
+  function fmtDate(d) { return new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); }
+%>
+
+<section class="card tile mb-4 challenges-hero">
+  <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+      <h1 class="mb-1"><i class="bi bi-calendar-plus"></i> Host a Session</h1>
+      <p class="text-secondary mb-0">Create hosted sessions and manage players joining your match.</p>
+    </div>
+    <a class="btn btn-outline-primary" href="/challenges"><i class="bi bi-trophy"></i> Go to challenges</a>
+  </div>
+</section>
+
+<% if (!currentUser.phone_verified_at) { %>
+  <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div><i class="bi bi-phone"></i> Verify your Swedish phone number to host or join sessions.</div>
+    <a class="btn btn-sm btn-outline-dark" href="/players/<%= currentUser.id %>/edit">Verify now</a>
+  </div>
+<% } %>
+
+<details class="card tile mb-4">
+  <summary class="card-body py-3 d-flex flex-wrap gap-2 align-items-center justify-content-between" style="cursor:pointer;">
+    <div class="small text-secondary">
+      <i class="bi bi-shield-exclamation"></i> Automated fair-play checks are active
+    </div>
+    <div class="d-flex flex-wrap gap-2 small">
+      <span class="badge text-bg-secondary">Pending outgoing: <%= policyCounters.pendingOutgoing %>/8</span>
+      <span class="badge text-bg-secondary">Sent last hour: <%= policyCounters.createdLastHour %>/10</span>
+      <span class="badge text-bg-<%= policyCounters.cancellations30d >= 4 ? 'danger' : 'secondary' %>">Cancellations (30d): <%= policyCounters.cancellations30d %>/6</span>
+    </div>
+  </summary>
+  <div class="card-body pt-0">
+    <div class="small text-secondary">
+      These policy checks protect players from spammy invites and repeat cancellations.
+      Keep your counters healthy for uninterrupted access.
+    </div>
+  </div>
+</details>
+
+<div class="card tile mb-4" id="hostMatchPanel">
+  <div class="card-body">
+    <h2 class="h5 mb-3"><i class="bi bi-calendar-plus"></i> Host a match</h2>
+    <form method="post" action="/hosted-matches">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small text-secondary mb-1">Title</label>
+          <input type="text" name="title" class="form-control" maxlength="120" placeholder="Saturday Doubles" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-secondary mb-1">When</label>
+          <input type="datetime-local" name="scheduled_at" class="form-control" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-secondary mb-1">Location</label>
+          <select name="location" class="form-select" required>
+            <% (hostedLocations || []).forEach(function(loc){ %>
+              <option value="<%= loc %>"><%= loc %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-secondary mb-1">Shuttles</label>
+          <select name="shuttle_type" class="form-select" required>
+            <option value="feathers">Feathers</option>
+            <option value="plastics">Plastics</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-secondary mb-1">Level (1-10)</label>
+          <input type="number" name="match_level" class="form-control" value="5" min="1" max="10" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-secondary mb-1">Max</label>
+          <input type="number" name="max_players" class="form-control" value="4" min="2" max="12" required>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-circle"></i> Host</button>
+        </div>
+      </div>
+      <div class="mt-2">
+        <label class="form-label small text-secondary mb-1">Message (optional)</label>
+        <input type="text" name="message" class="form-control" maxlength="400" placeholder="Bring shuttles, all levels welcome.">
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="d-flex align-items-center mb-3">
+  <h2 class="h5 mb-0"><i class="bi bi-people-fill text-primary"></i> Hosted matches</h2>
+  <span class="badge text-bg-secondary ms-2"><%= hostedOpen.length %></span>
+</div>
+<% if (hostedOpen.length === 0) { %>
+  <div class="card tile mb-4"><div class="card-body text-center text-secondary py-4">
+    No hosted matches yet.
+  </div></div>
+<% } else { %>
+  <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
+    <% hostedOpen.forEach(function(m){
+         const isHost = currentUser && currentUser.id === m.host_id;
+         const isFull = m.joined_count >= m.max_players || m.status === 'full';
+    %>
+      <div class="col">
+        <div class="card tile h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h3 class="h6 mb-0"><a href="/hosted-matches/<%= m.id %>" class="text-decoration-none"><%= m.title %></a></h3>
+              <span class="badge text-bg-<%= m.status === 'open' ? 'success' : m.status === 'full' ? 'warning' : 'secondary' %>"><%= m.status %></span>
+            </div>
+            <div class="small text-secondary mb-3">
+              <div><i class="bi bi-person"></i> Host: <%= m.host_name %></div>
+              <div><i class="bi bi-calendar-event"></i> <%= fmtDate(m.scheduled_at) %></div>
+              <div><i class="bi bi-geo-alt"></i> <%= m.location %></div>
+              <div><i class="bi bi-bullseye"></i> Level: <%= m.match_level || 5 %>/10</div>
+              <div><i class="bi bi-feather"></i> Shuttles: <%= m.shuttle_type === 'plastics' ? 'Plastics' : 'Feathers' %></div>
+              <div><i class="bi bi-people"></i> <%= m.joined_count %>/<%= m.max_players %> players</div>
+            </div>
+            <% if (m.message) { %>
+              <p class="small mb-3 fst-italic text-body">“<%= m.message %>”</p>
+            <% } %>
+
+            <% if (isHost) { %>
+              <form method="post" action="/hosted-matches/<%= m.id %>/cancel" class="d-inline">
+                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i> Cancel hosted match</button>
+              </form>
+            <% } else if (m.am_joined) { %>
+              <form method="post" action="/hosted-matches/<%= m.id %>/leave" class="d-inline">
+                <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-box-arrow-left"></i> Leave</button>
+              </form>
+            <% } else { %>
+              <form method="post" action="/hosted-matches/<%= m.id %>/join" class="d-inline">
+                <button type="submit" class="btn btn-primary btn-sm" <%= isFull ? 'disabled' : '' %>>
+                  <i class="bi bi-box-arrow-in-right"></i> <%= isFull ? 'Full' : 'Join' %>
+                </button>
+              </form>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

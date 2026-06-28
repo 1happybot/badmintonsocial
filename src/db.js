@@ -47,12 +47,15 @@ export async function initSchema() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS topminton_points INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMPTZ;
 
     UPDATE users
     SET referral_code = UPPER(SUBSTRING(MD5(id::text || COALESCE(email, '') || '-topminton'), 1, 8))
     WHERE referral_code IS NULL;
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone_number ON users(phone_number);
     CREATE INDEX IF NOT EXISTS idx_users_referred_by ON users(referred_by_user_id);
 
     ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_style TEXT NOT NULL DEFAULT 'smash';
@@ -73,6 +76,10 @@ export async function initSchema() {
     ALTER TABLE users ADD CONSTRAINT users_preferred_format_check CHECK (preferred_format IN ('singles', 'doubles', 'both'));
     ALTER TABLE users DROP CONSTRAINT IF EXISTS users_partner_skill_rating_check;
     ALTER TABLE users ADD CONSTRAINT users_partner_skill_rating_check CHECK (partner_skill_rating IS NULL OR partner_skill_rating BETWEEN 1 AND 10);
+    ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_number_check;
+    ALTER TABLE users ADD CONSTRAINT users_phone_number_check CHECK (
+      phone_number IS NULL OR phone_number ~ '^\\+46[1-9][0-9]{6,11}$'
+    );
 
     ALTER TABLE users ADD COLUMN IF NOT EXISTS skill_rating INTEGER;
     UPDATE users
@@ -113,12 +120,23 @@ export async function initSchema() {
       title TEXT NOT NULL,
       scheduled_at TIMESTAMPTZ NOT NULL,
       location TEXT NOT NULL,
+      shuttle_type TEXT NOT NULL DEFAULT 'feathers',
+      match_level INTEGER NOT NULL DEFAULT 5,
       max_players INTEGER NOT NULL CHECK (max_players BETWEEN 2 AND 12) DEFAULT 4,
       message TEXT,
       status TEXT NOT NULL CHECK (status IN ('open','full','cancelled')) DEFAULT 'open',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    ALTER TABLE hosted_matches ADD COLUMN IF NOT EXISTS shuttle_type TEXT NOT NULL DEFAULT 'feathers';
+    ALTER TABLE hosted_matches ADD COLUMN IF NOT EXISTS match_level INTEGER NOT NULL DEFAULT 5;
+    ALTER TABLE hosted_matches DROP CONSTRAINT IF EXISTS hosted_matches_shuttle_type_check;
+    ALTER TABLE hosted_matches ADD CONSTRAINT hosted_matches_shuttle_type_check
+      CHECK (shuttle_type IN ('feathers', 'plastics'));
+    ALTER TABLE hosted_matches DROP CONSTRAINT IF EXISTS hosted_matches_match_level_check;
+    ALTER TABLE hosted_matches ADD CONSTRAINT hosted_matches_match_level_check
+      CHECK (match_level BETWEEN 1 AND 10);
 
     CREATE TABLE IF NOT EXISTS hosted_match_participants (
       id SERIAL PRIMARY KEY,
@@ -206,6 +224,19 @@ export async function initSchema() {
       UNIQUE(challenge_id, from_user_id, to_user_id)
     );
 
+    CREATE TABLE IF NOT EXISTS hosted_match_feedback (
+      id SERIAL PRIMARY KEY,
+      hosted_match_id INTEGER NOT NULL REFERENCES hosted_matches(id) ON DELETE CASCADE,
+      from_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      to_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      attendance_status TEXT NOT NULL DEFAULT 'undecided' CHECK (attendance_status IN ('undecided', 'attended', 'no_show')),
+      payment_status TEXT NOT NULL DEFAULT 'undecided' CHECK (payment_status IN ('undecided', 'paid', 'no_show')),
+      note TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(hosted_match_id, from_user_id, to_user_id)
+    );
+
     CREATE TABLE IF NOT EXISTS wall_of_shame_appeals (
       id SERIAL PRIMARY KEY,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -233,6 +264,8 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_challenge_feedback_to_user ON challenge_feedback(to_user_id);
     CREATE INDEX IF NOT EXISTS idx_challenge_feedback_challenge ON challenge_feedback(challenge_id);
     CREATE INDEX IF NOT EXISTS idx_challenge_feedback_flags ON challenge_feedback(reported_no_show, reported_non_payment);
+    CREATE INDEX IF NOT EXISTS idx_hosted_match_feedback_match ON hosted_match_feedback(hosted_match_id);
+    CREATE INDEX IF NOT EXISTS idx_hosted_match_feedback_to_user ON hosted_match_feedback(to_user_id);
     CREATE INDEX IF NOT EXISTS idx_wall_shame_appeals_user ON wall_of_shame_appeals(user_id);
     CREATE INDEX IF NOT EXISTS idx_wall_shame_appeals_status ON wall_of_shame_appeals(status);
 

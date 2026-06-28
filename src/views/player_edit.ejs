@@ -89,6 +89,54 @@
             <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i> Save profile</button>
           </div>
         </form>
+
+        <hr class="my-4">
+
+        <div>
+          <h2 class="h5 mb-3"><i class="bi bi-phone"></i> Phone verification</h2>
+          <% if (form.phone_verified_at) { %>
+            <div class="alert alert-success py-2">
+              <i class="bi bi-patch-check"></i>
+              Verified: <strong><%= maskedPhone %></strong>
+            </div>
+          <% } else { %>
+            <div class="alert alert-warning py-2">
+              <i class="bi bi-exclamation-triangle"></i>
+              Verify a Swedish phone number to join hosted matches and accept challenges.
+            </div>
+          <% } %>
+
+          <form method="post" action="/players/<%= form.id %>/phone/send-code" class="row g-2 align-items-end mb-3">
+            <div class="col-md-8">
+              <label class="form-label">Swedish phone number</label>
+              <input
+                type="tel"
+                name="phone_number"
+                class="form-control"
+                placeholder="+46701234567 or 0701234567"
+                value="<%= form.phone_number || '' %>"
+                required>
+              <div class="form-text">Only Swedish numbers are allowed (+46).</div>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-outline-primary w-100" type="submit">
+                <i class="bi bi-send"></i> Send verification code
+              </button>
+            </div>
+          </form>
+
+          <form method="post" action="/players/<%= form.id %>/phone/verify" class="row g-2 align-items-end">
+            <div class="col-md-8">
+              <label class="form-label">Verification code</label>
+              <input type="text" name="verification_code" class="form-control" maxlength="10" placeholder="Enter SMS code" required>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-success w-100" type="submit">
+                <i class="bi bi-check2-circle"></i> Verify phone
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>

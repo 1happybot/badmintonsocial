@@ -22,6 +22,12 @@
           <span class="badge text-bg-info">Feedback <%= Number(player.avg_feedback_rating || 0).toFixed(1) %>/10</span>
           <span class="mx-2">·</span>
           <span class="badge text-bg-warning"><i class="bi bi-trophy-fill"></i> <%= player.topminton_points || 0 %> TopMinton pts</span>
+          <span class="mx-2">·</span>
+          <% if (player.phone_verified_at) { %>
+            <span class="badge text-bg-success"><i class="bi bi-patch-check"></i> Phone verified</span>
+          <% } else { %>
+            <span class="badge text-bg-secondary"><i class="bi bi-phone"></i> Phone not verified</span>
+          <% } %>
         </div>
       </div>
       <% if (currentUser && currentUser.id !== player.id) { %>
@@ -50,6 +56,9 @@
       <% } %>
       <% if (player.feedback_count > 0) { %>
         <span class="badge text-bg-secondary"><i class="bi bi-chat-heart"></i> <%= player.feedback_count %> feedback ratings</span>
+      <% } %>
+      <% if (currentUser && currentUser.id === player.id && player.phone_number) { %>
+        <span class="badge text-bg-dark"><i class="bi bi-phone"></i> <%= player.phone_number.slice(0, 4) %>******<%= player.phone_number.slice(-2) %></span>
       <% } %>
     </div>
 

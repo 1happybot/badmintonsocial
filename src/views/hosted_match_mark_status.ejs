@@ -1,0 +1,87 @@
+<%- include('partials/header') %>
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/challenges">Challenges</a></li>
+    <li class="breadcrumb-item"><a href="/hosted-matches/<%= match.id %>"><%= match.title %></a></li>
+    <li class="breadcrumb-item active" aria-current="page">Participant status</li>
+  </ol>
+</nav>
+
+<div class="card tile mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-2">
+      <div>
+        <h1 class="h4 mb-1"><i class="bi bi-check2-square text-primary"></i> Participant status</h1>
+        <p class="text-secondary mb-0 small">
+          Mark each participant as attended or no-show, and whether they paid for the session.
+        </p>
+      </div>
+      <a href="/hosted-matches/<%= match.id %>" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to match
+      </a>
+    </div>
+  </div>
+</div>
+
+<form method="post" action="/hosted-matches/<%= match.id %>/participants/status">
+  <div class="card tile">
+    <div class="card-body">
+      <% if (!participants || participants.length === 0) { %>
+        <div class="text-secondary">No participants to review yet.</div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Attendance</th>
+                <th>Payment</th>
+                <th>Note (optional)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% participants.forEach(function(p){ %>
+                <tr>
+                  <td>
+                    <a href="/players/<%= p.id %>" class="text-decoration-none"><%= p.name %></a>
+                    <% if (p.city) { %>
+                      <div class="small text-secondary"><i class="bi bi-geo-alt"></i> <%= p.city %></div>
+                    <% } %>
+                  </td>
+                  <td style="min-width: 180px;">
+                    <select class="form-select form-select-sm" name="attendance_<%= p.id %>">
+                      <option value="undecided" <%= p.attendance_status === 'undecided' ? 'selected' : '' %>>Undecided</option>
+                      <option value="attended" <%= p.attendance_status === 'attended' ? 'selected' : '' %>>Attended</option>
+                      <option value="no_show" <%= p.attendance_status === 'no_show' ? 'selected' : '' %>>No-show</option>
+                    </select>
+                    <div class="form-text small">Points are awarded only for Attended.</div>
+                  </td>
+                  <td style="min-width: 160px;">
+                    <select class="form-select form-select-sm" name="payment_<%= p.id %>">
+                      <option value="undecided" <%= p.payment_status === 'undecided' ? 'selected' : '' %>>Undecided</option>
+                      <option value="paid" <%= p.payment_status === 'paid' ? 'selected' : '' %>>Paid</option>
+                      <option value="no_show" <%= p.payment_status === 'no_show' ? 'selected' : '' %>>Did not pay</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input class="form-control form-control-sm" type="text" maxlength="220" name="note_<%= p.id %>" value="<%= p.note || '' %>" placeholder="Optional host note" />
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-end mt-3 gap-2">
+    <a href="/hosted-matches/<%= match.id %>" class="btn btn-outline-secondary">Cancel</a>
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-save"></i> Save participant status
+    </button>
+  </div>
+</form>
+
+<%- include('partials/footer') %>

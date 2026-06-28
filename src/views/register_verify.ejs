@@ -1,0 +1,41 @@
+<%- include('partials/header') %>
+
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="card tile">
+      <div class="card-body p-4 p-md-5">
+        <h1 class="h3 text-center mb-1"><i class="bi bi-envelope-check text-primary"></i> Verify your email</h1>
+        <p class="text-secondary text-center mb-4">Enter the verification code sent to <strong><%= maskedEmail %></strong>.</p>
+
+        <form method="post" action="/register/verify" class="mb-3">
+          <div class="mb-3">
+            <label class="form-label">Verification code</label>
+            <input
+              type="text"
+              name="verification_code"
+              class="form-control"
+              maxlength="10"
+              placeholder="Enter code"
+              required>
+            <div class="form-text">Check your inbox and spam folder.</div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-check2-circle"></i> Verify and create account
+          </button>
+        </form>
+
+        <form method="post" action="/register/verify/resend" class="mb-3">
+          <button type="submit" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-arrow-repeat"></i> Resend code
+          </button>
+        </form>
+
+        <p class="text-center text-secondary small mb-0">
+          Wrong email? <a href="/register">Start signup again</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

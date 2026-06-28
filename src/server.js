@@ -52,7 +52,7 @@ app.use(session({
 
 app.use(attachUser(
   async (id) => {
-    const r = await query('SELECT id, name, email, city, skill_rating, is_active FROM users WHERE id = $1', [id]);
+    const r = await query('SELECT id, name, email, city, skill_rating, is_active, phone_verified_at FROM users WHERE id = $1', [id]);
     const u = r.rows[0];
     return u && u.is_active ? u : null;
   },
@@ -93,6 +93,10 @@ app.get('/about', (req, res) => {
 
 app.get('/rules', (req, res) => {
   res.render('rules', { title: 'Rules & Guidelines' });
+});
+
+app.get('/tos', (req, res) => {
+  res.render('tos', { title: 'Terms of Service' });
 });
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));

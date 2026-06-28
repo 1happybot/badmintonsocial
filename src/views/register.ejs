@@ -5,7 +5,7 @@
     <div class="card tile">
       <div class="card-body p-4 p-md-5">
         <h1 class="h3 text-center mb-1"><i class="bi bi-person-plus text-primary"></i> Create your account</h1>
-        <p class="text-secondary text-center mb-4">Join TopMinton Sverige</p>
+        <p class="text-secondary text-center mb-4">Join TopMinton Sverige. We will send a verification code to your email before account creation.</p>
 
         <form method="post" action="/register">
           <% if (form.ref) { %>
@@ -13,8 +13,12 @@
               <i class="bi bi-gift"></i> You were invited with referral code <strong><%= form.ref %></strong>.
               Complete <strong>5 matches</strong> after signup and your referrer earns 50 TopMinton points!
             </div>
-            <input type="hidden" name="ref" value="<%= form.ref %>" />
           <% } %>
+          <div class="mb-3">
+            <label class="form-label">Referral code <span class="text-secondary small">(optional)</span></label>
+            <input type="text" name="ref" class="form-control" maxlength="16" value="<%= form.ref || '' %>" placeholder="Enter referral code" />
+            <div class="form-text">If someone invited you, enter their referral code here.</div>
+          </div>
           <div class="mb-3">
             <label class="form-label">Name</label>
             <input type="text" name="name" class="form-control" required maxlength="80" value="<%= form.name || '' %>">
@@ -53,7 +57,19 @@
               <div class="form-text">Select your city in Sweden.</div>
             </div>
             <div class="col-md-4">
-              <label class="form-label">Self rating (1-10)</label>
+              <label class="form-label d-flex align-items-center gap-2">
+                Self rating (1-10)
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm p-0 text-decoration-none"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  data-bs-title="1-3: 6 months of badminton playing experience&#10;3-4: 1+ year of badminton playing experience&#10;5-6: Plays at C level of Swedish Badminton Federation rankings&#10;7: Competes at B level in Swedish Badminton Federation&#10;8: Podium finishes at B level&#10;9: Competes at A level&#10;10: Podium finishes at multiple A level tournaments"
+                  aria-label="Rating guidance"
+                >
+                  <i class="bi bi-question-circle"></i>
+                </button>
+              </label>
               <select name="skill_rating" class="form-select">
                 <% for (let rating = 1; rating <= 10; rating++) { %>
                   <option value="<%= rating %>" <%= String(form.skill_rating || '5') === String(rating) ? 'selected' : '' %>>
@@ -68,30 +84,6 @@
                 <option value="feathers" <%= (form.shuttle_preference === 'feathers') ? 'selected' : '' %>>Feather</option>
                 <option value="plastics" <%= (form.shuttle_preference === 'plastics') ? 'selected' : '' %>>Plastic</option>
                 <option value="both" <%= (form.shuttle_preference === 'both' || !form.shuttle_preference) ? 'selected' : '' %>>Both</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-4">
-              <label class="form-label">Avatar style</label>
-              <select name="avatar_style" class="form-select">
-                <option value="smash" <%= (form.avatar_style === 'smash' || !form.avatar_style) ? 'selected' : '' %>>Smash</option>
-                <option value="lightning" <%= form.avatar_style === 'lightning' ? 'selected' : '' %>>Lightning</option>
-                <option value="shield" <%= form.avatar_style === 'shield' ? 'selected' : '' %>>Shield</option>
-                <option value="fire" <%= form.avatar_style === 'fire' ? 'selected' : '' %>>Fire</option>
-                <option value="ice" <%= form.avatar_style === 'ice' ? 'selected' : '' %>>Ice</option>
-                <option value="comet" <%= form.avatar_style === 'comet' ? 'selected' : '' %>>Comet</option>
-                <option value="rocket" <%= form.avatar_style === 'rocket' ? 'selected' : '' %>>Rocket</option>
-                <option value="crown" <%= form.avatar_style === 'crown' ? 'selected' : '' %>>Crown</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Handedness</label>
-              <select name="handedness" class="form-select">
-                <option value="right" <%= (form.handedness === 'right' || !form.handedness) ? 'selected' : '' %>>Right-handed</option>
-                <option value="left" <%= form.handedness === 'left' ? 'selected' : '' %>>Left-handed</option>
-                <option value="ambidextrous" <%= form.handedness === 'ambidextrous' ? 'selected' : '' %>>Ambidextrous</option>
               </select>
             </div>
             <div class="col-md-4">
@@ -120,6 +112,12 @@
                 <input class="form-check-input" type="checkbox" id="teamMode" name="team_mode" <%= form.team_mode ? 'checked' : '' %>>
                 <label class="form-check-label" for="teamMode">Register as doubles team (2 people)</label>
               </div>
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" id="acceptTos" name="accept_tos" required <%= form.accept_tos ? 'checked' : '' %>>
+                <label class="form-check-label" for="acceptTos">
+                  I accept the <a href="/tos" target="_blank" rel="noopener">Terms of Service</a>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -143,10 +141,6 @@
             </div>
           </div>
 
-          <div class="mb-4">
-            <label class="form-label">Short bio</label>
-            <textarea name="bio" class="form-control" rows="3" maxlength="400" placeholder="Tell other players about your style..."><%= form.bio || '' %></textarea>
-          </div>
           <button type="submit" class="btn btn-primary btn-lg w-100">
             <i class="bi bi-check-lg"></i> Sign up
           </button>
@@ -219,6 +213,11 @@
     teamMode.addEventListener('change', syncPartnerFields);
     syncPartnerFields();
   }
+
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach(function (el) {
+    new bootstrap.Tooltip(el);
+  });
 </script>
 
 <%- include('partials/footer') %>

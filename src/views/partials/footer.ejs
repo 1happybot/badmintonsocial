@@ -1,13 +1,36 @@
   </div>
 </main>
 <footer class="border-top bg-body-tertiary mt-auto py-3">
-  <div class="container text-center text-secondary small">
-    <nav class="footer-nav mb-2">
-      <a class="text-decoration-none me-3" href="/about"><i class="bi bi-info-circle"></i> About Us</a>
-      <a class="text-decoration-none" href="/rules"><i class="bi bi-book"></i> Rules</a>
-    </nav>
-    <i class="bi bi-trophy"></i>
-    TopMinton · Built with Node, Express &amp; Postgres
+  <div class="container text-secondary small">
+    <div class="row g-3 align-items-start text-center text-md-start">
+      <div class="col-12 col-md-4">
+        <div class="fw-semibold mb-2">Play</div>
+        <nav class="d-flex flex-column gap-1">
+          <a class="text-decoration-none" href="/challenges"><i class="bi bi-trophy"></i> Challenges</a>
+          <% if (currentUser) { %>
+            <a class="text-decoration-none" href="/players"><i class="bi bi-people"></i> Players</a>
+            <a class="text-decoration-none" href="/wall-of-shame"><i class="bi bi-exclamation-triangle"></i> Wall of Shame</a>
+          <% } %>
+        </nav>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="fw-semibold mb-2">Community</div>
+        <nav class="d-flex flex-column gap-1">
+          <a class="text-decoration-none" href="/about"><i class="bi bi-info-circle"></i> About Us</a>
+          <a class="text-decoration-none" href="/rules"><i class="bi bi-book"></i> Rules</a>
+        </nav>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="fw-semibold mb-2">Legal</div>
+        <nav class="d-flex flex-column gap-1">
+          <a class="text-decoration-none" href="/tos"><i class="bi bi-file-earmark-text"></i> Terms of Service</a>
+        </nav>
+        <div class="mt-2">
+          <i class="bi bi-trophy"></i>
+          TopMinton · Sweden badminton community platform
+        </div>
+      </div>
+    </div>
   </div>
 </footer>
 

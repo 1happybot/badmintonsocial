@@ -16,15 +16,20 @@ A Sweden where every badminton player can instantly find skilled opponents, arra
 
 - **Sweden-only player network** — all players registered and active in Swedish cities
 - **Skill rating system** (1–10 scale) for player discovery and balanced matchmaking
-- **Rich profiles** — avatar style, handedness, preferred format, bio, club/tournament preferences
-- **Profile editing** — players can update profile details after signup
+- **Rich profiles** — preferred format, bio, avatar style, handedness, and club/tournament preferences
+- **Verified signup** — email confirmation with Twilio Verify before account creation, plus optional referral code and guided self-rating tooltip
+- **Profile editing** — players can update extended profile details after signup
+- **Swedish phone verification** — users verify a +46 number via SMS before joining hosted matches or challenge participation
 - **Doubles team registration** — register as a team with partner details
 - **Shuttle preference** — choose feathers, plastics, or both
 - **Player discovery** — browse and filter registered players by Swedish city and skill rating
 - **Direct challenges** — propose one-on-one matches with date, time, location, and message
 - **Host group matches** — create matches for 2–12 players; other players join or leave dynamically
+- **Hosted match settlement** — after completion, hosts mark each participant as attended/no-show and paid/unpaid
 - **Match results tracking** — record completed matches with winner and score
 - **Post-match feedback (1–10)** — rate counterparts and optionally report no-show/non-payment incidents
+- **TopMinton points rewards** — 10 for attendance, 25 for hosting a completed session, and 50 referral milestone rewards
+- **Referral system** — invite players with referral codes; referrer earns points when invitees reach attendance milestones
 - **Automated fair-play policy checks** — outgoing challenge rate and cancellation abuse safeguards
 - **Wall of Shame** — visibility for repeated no-shows/non-payment/cancellation abuse
 - **Appeals + expiry logic** — flagged players can appeal; incidents and approved appeal visibility windows expire
@@ -33,7 +38,7 @@ A Sweden where every badminton player can instantly find skilled opponents, arra
 - **About Us page** — learn TopMinton's story, mission, and vision for Swedish badminton
 - **Community rules & guidelines** — shared values for sportsmanship, fair play, and respect
 - **City profiles** — find players in Stockholm, Gothenburg, Malmö, and all major Swedish cities
-- **Email + password authentication** with secure session management
+- **Email + password authentication** with secure session management and Twilio email verification at signup
 - **Responsive Bootstrap 5 UI** — dark theme, mobile-optimized, fully accessible
 
 ## Tech Stack
@@ -144,6 +149,12 @@ The app now supports split env files for cleaner switching:
 - `ADMIN_EMAIL` — default admin email used on first startup if no admin exists
 - `ADMIN_PASSWORD` — default admin password used on first startup if no admin exists
 - `ADMIN_NAME` — default admin display name used on first startup if no admin exists
+- `TWILIO_ACCOUNT_SID` — Twilio account SID for Verify API
+- `TWILIO_AUTH_TOKEN` — Twilio auth token for Verify API
+- `TWILIO_VERIFY_SERVICE_SID` — Twilio Verify Service SID used to send/check SMS and email verification codes
+
+Twilio setup note:
+- Enable both `SMS` and `Email` channels in your Twilio Verify service. Email delivery requires configuring the Verify email channel in Twilio.
 
 ### Default Admin Credentials (Development)
 
@@ -180,6 +191,7 @@ src/
     home.ejs               # landing page
     about.ejs              # About Us (mission, vision, story)
     register.ejs           # signup with Swedish cities
+    register_verify.ejs    # email verification step during signup
     login.ejs              # login form
     players.ejs            # player discovery grid with filters
     challenges.ejs         # challenges + hosted matches dashboard
@@ -207,12 +219,15 @@ test/
 |------|---------|
 | `/` | Landing page with hero section and feature cards |
 | `/about` | About Us — story, mission, vision for Swedish badminton |
-| `/register` | Signup with name, city (Swedish list), skill rating (1–10), shuttle preference |
+| `/register` | Signup form with profile basics, referral code, and Twilio email code delivery |
+| `/register/verify` | Email verification step to confirm signup code before account creation |
 | `/login` | Login form |
 | `/players` | Player discovery — browse, filter by city & skill rating |
 | `/players/:id` | Player profile — rich profile metadata, badges, feedback summary |
 | `/players/:id/edit` | Self-service profile edit page |
-| `/challenges` | Challenges dashboard — incoming/outgoing/upcoming/history + hosted matches + post-match feedback |
+| `/challenges` | Challenges dashboard — incoming/outgoing/upcoming/history + hosted matches + policy counters + collapsible host-match form |
+| `/hosted-matches/:id` | Hosted match detail — participants, chat, completion action, and participant attendance/payment status badges |
+| `/hosted-matches/:id/participants/status` | Host-only settlement page to mark participants as attended/no-show and paid/unpaid after completion |
 | `/wall-of-shame` | Fair-play visibility board with appeals and expiry policy |
 | `/admin` | Admin dashboard — badge applications/history, appeal moderation, badge/admin management |
 | `/rules` | Community rules & guidelines (sportsmanship, equipment, disputes) |
@@ -229,7 +244,10 @@ test/
 - `shuttle_preference` — 'feathers', 'plastics', or 'both'
 - `interested_in_tournaments`, `club_player` — player intent flags
 - `team_mode`, `partner_name`, `partner_handedness`, `partner_skill_rating` — doubles-team profile fields
+- `referral_code` — unique invite code for sharing with new users
+- `referred_by_user_id` — referring user relation (nullable)
 - `bio` — short player bio
+- `topminton_points` — total earned points
 - `created_at` — registration timestamp
 
 ### challenges table
@@ -242,11 +260,18 @@ test/
 - `id`, `host_id` — match & host
 - `title`, `scheduled_at`, `location` — details
 - `max_players` — capacity (2–12)
-- `status` — open/full/cancelled
+- `status` — open/full/cancelled/completed
 - `message` — optional description
 
 ### hosted_match_participants table
 - Links players to hosted matches (many-to-many)
+
+### hosted_match_feedback table
+- Host-submitted participant settlement for hosted matches
+- `attendance_status` — `undecided`/`attended`/`no_show`
+- `payment_status` — `undecided`/`paid`/`no_show`
+- Optional `note` per participant
+- One row per hosted match + host + participant
 
 ### badges table
 - Stores platform badge definitions and auto-award criteria

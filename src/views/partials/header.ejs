@@ -45,9 +45,8 @@
           </li>
         <% } %>
         <% if (currentUser) { %>
-          <li class="nav-item"><a class="nav-link" href="/players"><i class="bi bi-people"></i> Players</a></li>
           <li class="nav-item"><a class="nav-link" href="/challenges"><i class="bi bi-trophy"></i> Challenges</a></li>
-          <li class="nav-item"><a class="nav-link" href="/wall-of-shame"><i class="bi bi-exclamation-triangle"></i> Wall of Shame</a></li>
+          <li class="nav-item"><a class="nav-link" href="/hosted-matches"><i class="bi bi-calendar-plus"></i> Host a session</a></li>
           <li class="nav-item"><a class="nav-link" href="/players/<%= currentUser.id %>"><i class="bi bi-person-circle"></i> Profile</a></li>
           <li class="nav-item"><button id="themeToggle" class="btn btn-outline-secondary btn-sm theme-toggle-btn" title="Toggle theme"><i class="bi bi-moon"></i></button></li>
           <li class="nav-item d-flex align-items-center text-secondary px-2 small">
