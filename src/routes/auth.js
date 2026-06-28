@@ -1,14 +1,14 @@
 import express from 'express';
+import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { query } from '../db.js';
 import { flash } from '../middleware.js';
 import { generateReferralCode } from '../points.js';
 import {
-  checkEmailVerificationCode,
   maskEmail,
   normalizeEmail,
-  sendEmailVerificationCode,
 } from '../phone-verification.js';
+import { sendSignupVerificationEmail } from '../email-verification.js';
 
 const router = express.Router();
 
@@ -77,22 +77,88 @@ function getPendingSignup(req) {
   return req.session.pendingSignup || null;
 }
 
+function hashToken(token) {
+  return createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function getBaseUrl(req) {
+  const configured = String(process.env.APP_BASE_URL || '').trim();
+  if (configured) return configured.replace(/\/$/, '');
+  return `${req.protocol}://${req.get('host')}`;
+}
+
 router.get('/register', (req, res) => {
   if (req.session.userId) return res.redirect('/challenges');
   const ref = normalizeRefCode(req.query.ref);
   res.render('register', { title: 'Register', form: { ref } });
 });
 
-router.get('/register/verify', (req, res) => {
+router.get('/register/verify', async (req, res) => {
   if (req.session.userId) return res.redirect('/challenges');
-  const pendingSignup = getPendingSignup(req);
-  if (!pendingSignup) {
-    flash(req, 'error', 'Start signup first so we can send your verification code.');
+  const token = String(req.query.token || '').trim();
+  if (!/^[a-f0-9]{40,128}$/i.test(token)) {
+    flash(req, 'error', 'Verification link is invalid. Please sign up again.');
     return res.redirect('/register');
   }
 
-  return res.render('register_verify', {
-    title: 'Verify your email',
+  try {
+    const tokenHash = hashToken(token);
+    const verificationRes = await query(
+      `SELECT id, email, pending_signup
+       FROM email_verification_requests
+       WHERE token_hash = $1
+         AND used_at IS NULL
+         AND expires_at >= NOW()`,
+      [tokenHash]
+    );
+
+    if (verificationRes.rowCount === 0) {
+      flash(req, 'error', 'Verification link is invalid or expired. Please request a new signup email.');
+      return res.redirect('/register');
+    }
+
+    const verification = verificationRes.rows[0];
+    const pendingSignup = verification.pending_signup;
+
+    const existing = await query('SELECT id FROM users WHERE email = $1', [verification.email]);
+    if (existing.rowCount > 0) {
+      await query(
+        `UPDATE email_verification_requests
+         SET used_at = NOW()
+         WHERE id = $1`,
+        [verification.id]
+      );
+      flash(req, 'success', 'Email already verified. You can log in now.');
+      return res.redirect('/login');
+    }
+
+    const userId = await createUserFromPendingSignup(pendingSignup);
+    await query(
+      `UPDATE email_verification_requests
+       SET used_at = NOW()
+       WHERE id = $1`,
+      [verification.id]
+    );
+    req.session.userId = userId;
+    req.session.pendingSignup = null;
+    flash(req, 'success', `Welcome to TopMinton, ${pendingSignup.name}! Your email is now confirmed.`);
+    return res.redirect('/challenges');
+  } catch (_err) {
+    flash(req, 'error', 'Could not verify your email link. Please try signing up again.');
+    return res.redirect('/register');
+  }
+});
+
+router.get('/register/check-email', (req, res) => {
+  if (req.session.userId) return res.redirect('/challenges');
+  const pendingSignup = getPendingSignup(req);
+  if (!pendingSignup || !pendingSignup.email) {
+    flash(req, 'error', 'Start signup first so we can send a confirmation email.');
+    return res.redirect('/register');
+  }
+
+  return res.render('register_check_email', {
+    title: 'Check your email',
     maskedEmail: maskEmail(pendingSignup.email),
   });
 });
@@ -201,86 +267,85 @@ router.post('/register', async (req, res) => {
   };
 
   try {
-    await sendEmailVerificationCode(normalizedEmail);
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = hashToken(token);
+    const verificationUrl = `${getBaseUrl(req)}/register/verify?token=${token}`;
+
+    await query(
+      `DELETE FROM email_verification_requests
+       WHERE email = $1
+         AND used_at IS NULL`,
+      [normalizedEmail]
+    );
+
+    await query(
+      `INSERT INTO email_verification_requests (email, token_hash, pending_signup, expires_at)
+       VALUES ($1, $2, $3::jsonb, NOW() + INTERVAL '24 hours')`,
+      [normalizedEmail, tokenHash, JSON.stringify(pendingSignup)]
+    );
+
+    await sendSignupVerificationEmail({
+      toEmail: normalizedEmail,
+      verificationUrl,
+      name: pendingSignup.name,
+    });
   } catch (err) {
-    if (err && err.message === 'twilio_not_configured') {
-      flash(req, 'error', 'Email verification is not configured. Set Twilio Verify credentials and enable email channel.');
+    if (err && (err.message === 'sendgrid_not_configured' || err.message === 'twilio_not_configured')) {
+      flash(req, 'error', 'Email verification is not configured. Set SendGrid variables for Twilio email link delivery.');
     } else {
-      flash(req, 'error', 'Could not send email verification code. Please try again.');
+      flash(req, 'error', 'Could not send confirmation email. Please try again.');
     }
     return res.status(502).render('register', { title: 'Register', form });
   }
 
   req.session.pendingSignup = pendingSignup;
-  flash(req, 'success', `We sent a verification code to ${maskEmail(normalizedEmail)}.`);
-  return res.redirect('/register/verify');
+  flash(req, 'success', `We sent a confirmation link to ${maskEmail(normalizedEmail)}.`);
+  return res.redirect('/register/check-email');
 });
 
-router.post('/register/verify/resend', async (req, res) => {
+router.post('/register/check-email/resend', async (req, res) => {
   if (req.session.userId) return res.redirect('/challenges');
   const pendingSignup = getPendingSignup(req);
   if (!pendingSignup) {
-    flash(req, 'error', 'Start signup first so we can send your verification code.');
+    flash(req, 'error', 'Start signup first so we can send your confirmation email.');
     return res.redirect('/register');
   }
 
   try {
-    await sendEmailVerificationCode(pendingSignup.email);
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = hashToken(token);
+    const verificationUrl = `${getBaseUrl(req)}/register/verify?token=${token}`;
+
+    await query(
+      `DELETE FROM email_verification_requests
+       WHERE email = $1
+         AND used_at IS NULL`,
+      [pendingSignup.email]
+    );
+    await query(
+      `INSERT INTO email_verification_requests (email, token_hash, pending_signup, expires_at)
+       VALUES ($1, $2, $3::jsonb, NOW() + INTERVAL '24 hours')`,
+      [pendingSignup.email, tokenHash, JSON.stringify(pendingSignup)]
+    );
+
+    await sendSignupVerificationEmail({
+      toEmail: pendingSignup.email,
+      verificationUrl,
+      name: pendingSignup.name,
+    });
+
     pendingSignup.requestedAt = Date.now();
     req.session.pendingSignup = pendingSignup;
-    flash(req, 'success', `A new verification code was sent to ${maskEmail(pendingSignup.email)}.`);
+    flash(req, 'success', `A new confirmation link was sent to ${maskEmail(pendingSignup.email)}.`);
   } catch (err) {
-    if (err && err.message === 'twilio_not_configured') {
-      flash(req, 'error', 'Email verification is not configured. Set Twilio Verify credentials and enable email channel.');
+    if (err && (err.message === 'sendgrid_not_configured' || err.message === 'twilio_not_configured')) {
+      flash(req, 'error', 'Email verification is not configured. Set SendGrid variables for Twilio email link delivery.');
     } else {
-      flash(req, 'error', 'Could not resend verification code. Please try again.');
+      flash(req, 'error', 'Could not resend confirmation email. Please try again.');
     }
   }
 
-  return res.redirect('/register/verify');
-});
-
-router.post('/register/verify', async (req, res) => {
-  if (req.session.userId) return res.redirect('/challenges');
-  const pendingSignup = getPendingSignup(req);
-  if (!pendingSignup) {
-    flash(req, 'error', 'Start signup first so we can verify your email.');
-    return res.redirect('/register');
-  }
-
-  const code = String(req.body.verification_code || '').trim();
-  if (!/^[A-Za-z0-9]{4,10}$/.test(code)) {
-    flash(req, 'error', 'Enter a valid verification code.');
-    return res.redirect('/register/verify');
-  }
-
-  try {
-    const check = await checkEmailVerificationCode(pendingSignup.email, code);
-    if (String(check.status) !== 'approved') {
-      flash(req, 'error', 'Verification code is incorrect or expired.');
-      return res.redirect('/register/verify');
-    }
-
-    const existing = await query('SELECT id FROM users WHERE email = $1', [pendingSignup.email]);
-    if (existing.rowCount > 0) {
-      req.session.pendingSignup = null;
-      flash(req, 'error', 'An account with that email already exists. Please log in.');
-      return res.redirect('/login');
-    }
-
-    const userId = await createUserFromPendingSignup(pendingSignup);
-    req.session.pendingSignup = null;
-    req.session.userId = userId;
-    flash(req, 'success', `Welcome to TopMinton, ${pendingSignup.name}!`);
-    return res.redirect('/challenges');
-  } catch (err) {
-    if (err && err.message === 'twilio_not_configured') {
-      flash(req, 'error', 'Email verification is not configured. Set Twilio Verify credentials and enable email channel.');
-    } else {
-      flash(req, 'error', 'Could not verify code. Please try again.');
-    }
-    return res.redirect('/register/verify');
-  }
+  return res.redirect('/register/check-email');
 });
 
 router.get('/login', (req, res) => {

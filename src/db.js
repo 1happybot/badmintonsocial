@@ -249,6 +249,16 @@ export async function initSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS email_verification_requests (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      pending_signup JSONB NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
     CREATE INDEX IF NOT EXISTS idx_hosted_matches_host_id ON hosted_matches(host_id);
     CREATE INDEX IF NOT EXISTS idx_hosted_matches_scheduled_at ON hosted_matches(scheduled_at);
     CREATE INDEX IF NOT EXISTS idx_hosted_matches_status ON hosted_matches(status);
@@ -268,6 +278,8 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_hosted_match_feedback_to_user ON hosted_match_feedback(to_user_id);
     CREATE INDEX IF NOT EXISTS idx_wall_shame_appeals_user ON wall_of_shame_appeals(user_id);
     CREATE INDEX IF NOT EXISTS idx_wall_shame_appeals_status ON wall_of_shame_appeals(status);
+    CREATE INDEX IF NOT EXISTS idx_email_verification_email ON email_verification_requests(email);
+    CREATE INDEX IF NOT EXISTS idx_email_verification_expires ON email_verification_requests(expires_at);
 
     CREATE TABLE IF NOT EXISTS session (
       sid varchar NOT NULL COLLATE "default" PRIMARY KEY,

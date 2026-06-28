@@ -17,7 +17,7 @@ A Sweden where every badminton player can instantly find skilled opponents, arra
 - **Sweden-only player network** — all players registered and active in Swedish cities
 - **Skill rating system** (1–10 scale) for player discovery and balanced matchmaking
 - **Rich profiles** — preferred format, bio, avatar style, handedness, and club/tournament preferences
-- **Verified signup** — email confirmation with Twilio Verify before account creation, plus optional referral code and guided self-rating tooltip
+- **Verified signup** — one-click email confirmation link (Twilio SendGrid) before account creation, plus optional referral code and guided self-rating tooltip
 - **Profile editing** — players can update extended profile details after signup
 - **Swedish phone verification** — users verify a +46 number via SMS before joining hosted matches or challenge participation
 - **Doubles team registration** — register as a team with partner details
@@ -38,7 +38,7 @@ A Sweden where every badminton player can instantly find skilled opponents, arra
 - **About Us page** — learn TopMinton's story, mission, and vision for Swedish badminton
 - **Community rules & guidelines** — shared values for sportsmanship, fair play, and respect
 - **City profiles** — find players in Stockholm, Gothenburg, Malmö, and all major Swedish cities
-- **Email + password authentication** with secure session management and Twilio email verification at signup
+- **Email + password authentication** with secure session management and email-link verification at signup
 - **Responsive Bootstrap 5 UI** — dark theme, mobile-optimized, fully accessible
 
 ## Tech Stack
@@ -151,10 +151,14 @@ The app now supports split env files for cleaner switching:
 - `ADMIN_NAME` — default admin display name used on first startup if no admin exists
 - `TWILIO_ACCOUNT_SID` — Twilio account SID for Verify API
 - `TWILIO_AUTH_TOKEN` — Twilio auth token for Verify API
-- `TWILIO_VERIFY_SERVICE_SID` — Twilio Verify Service SID used to send/check SMS and email verification codes
+- `TWILIO_VERIFY_SERVICE_SID` — Twilio Verify Service SID used to send/check SMS verification codes
+- `SENDGRID_API_KEY` — Twilio SendGrid API key used for signup confirmation emails
+- `SENDGRID_FROM_EMAIL` — verified sender email used for signup confirmation emails
+- `APP_BASE_URL` — public app URL used in confirmation links (example: https://topminton.akshay.im)
 
 Twilio setup note:
-- Enable both `SMS` and `Email` channels in your Twilio Verify service. Email delivery requires configuring the Verify email channel in Twilio.
+- Enable `SMS` channel in your Twilio Verify service for phone verification.
+- Configure a verified sender in Twilio SendGrid for signup confirmation emails.
 
 ### Default Admin Credentials (Development)
 
@@ -191,7 +195,7 @@ src/
     home.ejs               # landing page
     about.ejs              # About Us (mission, vision, story)
     register.ejs           # signup with Swedish cities
-    register_verify.ejs    # email verification step during signup
+    register_check_email.ejs # post-signup check-email screen
     login.ejs              # login form
     players.ejs            # player discovery grid with filters
     challenges.ejs         # challenges + hosted matches dashboard
@@ -219,8 +223,9 @@ test/
 |------|---------|
 | `/` | Landing page with hero section and feature cards |
 | `/about` | About Us — story, mission, vision for Swedish badminton |
-| `/register` | Signup form with profile basics, referral code, and Twilio email code delivery |
-| `/register/verify` | Email verification step to confirm signup code before account creation |
+| `/register` | Signup form with profile basics and referral support |
+| `/register/check-email` | Post-signup screen asking users to confirm via email link |
+| `/register/verify?token=...` | Link endpoint used from email to verify and create account |
 | `/login` | Login form |
 | `/players` | Player discovery — browse, filter by city & skill rating |
 | `/players/:id` | Player profile — rich profile metadata, badges, feedback summary |
