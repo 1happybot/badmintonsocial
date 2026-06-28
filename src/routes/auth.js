@@ -90,7 +90,7 @@ function getBaseUrl(req) {
 router.get('/register', (req, res) => {
   if (req.session.userId) return res.redirect('/challenges');
   const ref = normalizeRefCode(req.query.ref);
-  res.render('register', { title: 'Register', form: { ref } });
+  res.render('register', { title: 'Register', form: { ref }, errorMessage: null });
 });
 
 router.get('/register/verify', async (req, res) => {

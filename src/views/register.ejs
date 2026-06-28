@@ -7,7 +7,7 @@
         <h1 class="h3 text-center mb-1"><i class="bi bi-person-plus text-primary"></i> Create your account</h1>
         <p class="text-secondary text-center mb-4">Join TopMinton Sverige. We will send a confirmation link to your email before account creation.</p>
 
-        <% if (errorMessage) { %>
+        <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
           <div class="alert alert-danger" role="alert">
             <i class="bi bi-exclamation-triangle"></i> <%= errorMessage %>
           </div>
