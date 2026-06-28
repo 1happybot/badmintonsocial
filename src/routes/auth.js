@@ -198,28 +198,40 @@ router.post('/register', async (req, res) => {
     ref: normalizeRefCode(ref),
   };
 
+  const renderRegisterError = (statusCode, message) => {
+    return res.status(statusCode).render('register', {
+      title: 'Register',
+      form,
+      errorMessage: message,
+    });
+  };
+
+  const trimmedName = String(name || '').trim();
+  const trimmedCity = String(city || '').trim();
+
   if (!name || !email || !password) {
-    flash(req, 'error', 'Name, email and password are required.');
-    return res.status(400).render('register', { title: 'Register', form });
+    return renderRegisterError(400, 'Name, email and password are required.');
+  }
+  if (trimmedName.length < 2) {
+    return renderRegisterError(400, 'Name must be at least 2 characters long.');
+  }
+  if (!trimmedCity) {
+    return renderRegisterError(400, 'City is required. Please choose your city in Sweden.');
   }
   if (password.length < 8) {
-    flash(req, 'error', 'Password must be at least 8 characters.');
-    return res.status(400).render('register', { title: 'Register', form });
+    return renderRegisterError(400, 'Password must be at least 8 characters.');
   }
   if (accept_tos !== 'on') {
-    flash(req, 'error', 'You must accept the Terms of Service to create an account.');
-    return res.status(400).render('register', { title: 'Register', form });
+    return renderRegisterError(400, 'You must accept the Terms of Service to create an account.');
   }
 
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) {
-    flash(req, 'error', 'Enter a valid email address.');
-    return res.status(400).render('register', { title: 'Register', form });
+    return renderRegisterError(400, 'Enter a valid email address.');
   }
   const existing = await query('SELECT id FROM users WHERE email = $1', [normalizedEmail]);
   if (existing.rowCount > 0) {
-    flash(req, 'error', 'An account with that email already exists.');
-    return res.status(409).render('register', { title: 'Register', form });
+    return renderRegisterError(409, 'An account with that email already exists.');
   }
 
   const hash = await bcrypt.hash(password, 12);
@@ -240,8 +252,7 @@ router.post('/register', async (req, res) => {
     : null;
 
   if (isTeamMode && !safePartnerName) {
-    flash(req, 'error', 'Partner name is required for doubles team registration.');
-    return res.status(400).render('register', { title: 'Register', form });
+    return renderRegisterError(400, 'Partner name is required for doubles team registration.');
   }
 
   const teamPreferredFormat = isTeamMode && safePreferredFormat === 'singles' ? 'doubles' : safePreferredFormat;
@@ -252,7 +263,7 @@ router.post('/register', async (req, res) => {
     name: name.trim(),
     email: normalizedEmail,
     passwordHash: hash,
-    city: city?.trim() || null,
+    city: trimmedCity,
     skillRating: safeRating,
     shuttlePreference: safePref,
     preferredFormat: teamPreferredFormat,
@@ -291,11 +302,9 @@ router.post('/register', async (req, res) => {
     });
   } catch (err) {
     if (err && (err.message === 'sendgrid_not_configured' || err.message === 'twilio_not_configured')) {
-      flash(req, 'error', 'Email verification is not configured. Set SendGrid variables for Twilio email link delivery.');
-    } else {
-      flash(req, 'error', 'Could not send confirmation email. Please try again.');
+      return renderRegisterError(502, 'Could not send confirmation email. Configure SENDGRID_API_KEY (or TWILIO_API_KEY) and SENDGRID_FROM_EMAIL.');
     }
-    return res.status(502).render('register', { title: 'Register', form });
+    return renderRegisterError(502, 'Could not send confirmation email. Please try again.');
   }
 
   req.session.pendingSignup = pendingSignup;

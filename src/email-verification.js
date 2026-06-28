@@ -1,6 +1,6 @@
 export async function sendSignupVerificationEmail({ toEmail, verificationUrl, name }) {
-  const apiKey = String(process.env.SENDGRID_API_KEY || '').trim();
-  const fromEmail = String(process.env.SENDGRID_FROM_EMAIL || '').trim();
+  const apiKey = String(process.env.SENDGRID_API_KEY || process.env.TWILIO_API_KEY || '').trim();
+  const fromEmail = String(process.env.SENDGRID_FROM_EMAIL || process.env.TWILIO_FROM_EMAIL || '').trim();
 
   if (!apiKey || !fromEmail) {
     throw new Error('sendgrid_not_configured');
