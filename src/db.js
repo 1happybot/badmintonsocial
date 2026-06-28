@@ -259,6 +259,18 @@ export async function initSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS password_reset_requests (
+      id SERIAL PRIMARY KEY,
+      user_type TEXT NOT NULL CHECK (user_type IN ('user', 'admin')),
+      user_id INTEGER NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_requests(user_type, user_id);
+    CREATE INDEX IF NOT EXISTS idx_password_reset_expires ON password_reset_requests(expires_at);
+
     CREATE INDEX IF NOT EXISTS idx_hosted_matches_host_id ON hosted_matches(host_id);
     CREATE INDEX IF NOT EXISTS idx_hosted_matches_scheduled_at ON hosted_matches(scheduled_at);
     CREATE INDEX IF NOT EXISTS idx_hosted_matches_status ON hosted_matches(status);

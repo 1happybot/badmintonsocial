@@ -8,7 +8,7 @@ import {
   maskEmail,
   normalizeEmail,
 } from '../phone-verification.js';
-import { sendSignupVerificationEmail } from '../email-verification.js';
+import { sendSignupVerificationEmail, sendPasswordResetEmail } from '../email-verification.js';
 
 const router = express.Router();
 
@@ -394,6 +394,109 @@ router.post('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/');
   });
+});
+
+// --- Forgot / reset password (users) ---
+
+router.get('/forgot-password', (req, res) => {
+  if (req.session.userId) return res.redirect('/challenges');
+  res.render('forgot_password', { title: 'Forgot password', form: {}, errorMessage: null, successMessage: null });
+});
+
+router.post('/forgot-password', async (req, res) => {
+  const normalizedEmail = normalizeEmail(req.body.email);
+  // Always show a generic success response to prevent email enumeration.
+  const okResponse = () => res.render('forgot_password', {
+    title: 'Forgot password',
+    form: {},
+    errorMessage: null,
+    successMessage: 'If an account with that email exists, a reset link has been sent.',
+  });
+
+  if (!normalizedEmail) return okResponse();
+
+  try {
+    const userRes = await query(
+      'SELECT id, name, email FROM users WHERE email = $1 AND is_active = TRUE',
+      [normalizedEmail]
+    );
+    if (userRes.rowCount > 0) {
+      const user = userRes.rows[0];
+      const token = randomBytes(32).toString('hex');
+      const tokenHash = hashToken(token);
+      const resetUrl = `${getBaseUrl(req)}/reset-password?token=${token}`;
+
+      await query(
+        `DELETE FROM password_reset_requests
+         WHERE user_type = 'user' AND user_id = $1 AND used_at IS NULL`,
+        [user.id]
+      );
+      await query(
+        `INSERT INTO password_reset_requests (user_type, user_id, token_hash, expires_at)
+         VALUES ('user', $1, $2, NOW() + INTERVAL '1 hour')`,
+        [user.id, tokenHash]
+      );
+      await sendPasswordResetEmail({ toEmail: user.email, resetUrl, name: user.name });
+    }
+  } catch (_err) {
+    // Silently absorb errors to prevent enumeration.
+  }
+
+  return okResponse();
+});
+
+router.get('/reset-password', async (req, res) => {
+  if (req.session.userId) return res.redirect('/challenges');
+  const token = String(req.query.token || '').trim();
+  if (!/^[a-f0-9]{40,128}$/i.test(token)) {
+    flash(req, 'error', 'Reset link is invalid. Request a new one.');
+    return res.redirect('/forgot-password');
+  }
+  const tokenHash = hashToken(token);
+  const reqRow = await query(
+    `SELECT id FROM password_reset_requests
+     WHERE token_hash = $1 AND user_type = 'user' AND used_at IS NULL AND expires_at >= NOW()`,
+    [tokenHash]
+  );
+  if (reqRow.rowCount === 0) {
+    flash(req, 'error', 'Reset link is invalid or has expired. Request a new one.');
+    return res.redirect('/forgot-password');
+  }
+  res.render('reset_password', { title: 'Reset password', token, errorMessage: null });
+});
+
+router.post('/reset-password', async (req, res) => {
+  if (req.session.userId) return res.redirect('/challenges');
+  const token = String(req.body.token || '').trim();
+  const password = String(req.body.password || '');
+  const confirmPassword = String(req.body.confirm_password || '');
+
+  const renderError = (msg) => res.status(400).render('reset_password', {
+    title: 'Reset password', token, errorMessage: msg,
+  });
+
+  if (!/^[a-f0-9]{40,128}$/i.test(token)) return renderError('Invalid reset token.');
+  if (password.length < 8) return renderError('Password must be at least 8 characters.');
+  if (password !== confirmPassword) return renderError('Passwords do not match.');
+
+  const tokenHash = hashToken(token);
+  const reqRow = await query(
+    `SELECT id, user_id FROM password_reset_requests
+     WHERE token_hash = $1 AND user_type = 'user' AND used_at IS NULL AND expires_at >= NOW()`,
+    [tokenHash]
+  );
+  if (reqRow.rowCount === 0) {
+    flash(req, 'error', 'Reset link is invalid or has expired. Request a new one.');
+    return res.redirect('/forgot-password');
+  }
+
+  const { id: resetId, user_id: userId } = reqRow.rows[0];
+  const hash = await bcrypt.hash(password, 12);
+  await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, userId]);
+  await query('UPDATE password_reset_requests SET used_at = NOW() WHERE id = $1', [resetId]);
+
+  flash(req, 'success', 'Password updated. You can now log in.');
+  return res.redirect('/login');
 });
 
 export default router;

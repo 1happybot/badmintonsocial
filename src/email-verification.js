@@ -1,3 +1,51 @@
+export async function sendPasswordResetEmail({ toEmail, resetUrl, name, isAdmin = false }) {
+  const apiKey = String(process.env.SENDGRID_API_KEY || process.env.TWILIO_API_KEY || '').trim();
+  const fromEmail = String(process.env.SENDGRID_FROM_EMAIL || process.env.TWILIO_FROM_EMAIL || '').trim();
+
+  if (!apiKey || !fromEmail) {
+    const missing = [];
+    if (!apiKey) missing.push('SENDGRID_API_KEY|TWILIO_API_KEY');
+    if (!fromEmail) missing.push('SENDGRID_FROM_EMAIL|TWILIO_FROM_EMAIL');
+    throw new Error(`sendgrid_not_configured:${missing.join(',')}`);
+  }
+
+  const safeName = String(name || '').trim() || 'there';
+  const accountLabel = isAdmin ? 'admin account' : 'TopMinton account';
+
+  const payload = {
+    personalizations: [
+      {
+        to: [{ email: toEmail }],
+        subject: `Reset your ${isAdmin ? 'TopMinton admin' : 'TopMinton'} password`,
+      },
+    ],
+    from: { email: fromEmail, name: 'TopMinton' },
+    content: [
+      {
+        type: 'text/plain',
+        value: `Hi ${safeName},\n\nReset your ${accountLabel} password by clicking this link:\n${resetUrl}\n\nThis link expires in 1 hour.\n\nIf you did not request a password reset, you can safely ignore this email.`,
+      },
+      {
+        type: 'text/html',
+        value: `<p>Hi ${safeName},</p><p>Reset your ${accountLabel} password by clicking this link:</p><p><a href="${resetUrl}">Reset my password</a></p><p>This link expires in 1 hour.</p><p>If you did not request a password reset, you can safely ignore this email.</p>`,
+      },
+    ],
+  };
+
+  const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`sendgrid_error_${res.status}`);
+  }
+}
+
 export async function sendSignupVerificationEmail({ toEmail, verificationUrl, name }) {
   const apiKey = String(process.env.SENDGRID_API_KEY || process.env.TWILIO_API_KEY || '').trim();
   const fromEmail = String(process.env.SENDGRID_FROM_EMAIL || process.env.TWILIO_FROM_EMAIL || '').trim();

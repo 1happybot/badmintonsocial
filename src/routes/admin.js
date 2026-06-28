@@ -1,7 +1,9 @@
 import express from 'express';
+import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { pool, query } from '../db.js';
 import { flash, requireAdminAuth } from '../middleware.js';
+import { sendPasswordResetEmail } from '../email-verification.js';
 
 export function createAdminRouter(deps = {}) {
   const {
@@ -587,5 +589,116 @@ export function createAdminRouter(deps = {}) {
   return router;
 }
 
+function hashAdminToken(token) {
+  return createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function getBaseUrl(req) {
+  const configured = String(process.env.APP_BASE_URL || '').trim();
+  if (configured) return configured.replace(/\/$/, '');
+  return `${req.protocol}://${req.get('host')}`;
+}
+
 const router = createAdminRouter();
+
+router.get('/admin/forgot-password', (req, res) => {
+  if (req.session.adminId) return res.redirect('/admin');
+  res.render('admin_forgot_password', { title: 'Admin — Forgot password', form: {}, errorMessage: null, successMessage: null });
+});
+
+router.post('/admin/forgot-password', async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const okResponse = () => res.render('admin_forgot_password', {
+    title: 'Admin — Forgot password',
+    form: {},
+    errorMessage: null,
+    successMessage: 'If an admin account with that email exists, a reset link has been sent.',
+  });
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return okResponse();
+
+  try {
+    const adminRes = await query(
+      'SELECT id, name, email FROM admins WHERE email = $1 AND is_active = TRUE',
+      [email]
+    );
+    if (adminRes.rowCount > 0) {
+      const admin = adminRes.rows[0];
+      const token = randomBytes(32).toString('hex');
+      const tokenHash = hashAdminToken(token);
+      const resetUrl = `${getBaseUrl(req)}/admin/reset-password?token=${token}`;
+
+      await query(
+        `DELETE FROM password_reset_requests
+         WHERE user_type = 'admin' AND user_id = $1 AND used_at IS NULL`,
+        [admin.id]
+      );
+      await query(
+        `INSERT INTO password_reset_requests (user_type, user_id, token_hash, expires_at)
+         VALUES ('admin', $1, $2, NOW() + INTERVAL '1 hour')`,
+        [admin.id, tokenHash]
+      );
+      await sendPasswordResetEmail({ toEmail: admin.email, resetUrl, name: admin.name, isAdmin: true });
+    }
+  } catch (_err) {
+    // Silently absorb to prevent enumeration.
+  }
+
+  return okResponse();
+});
+
+router.get('/admin/reset-password', async (req, res) => {
+  if (req.session.adminId) return res.redirect('/admin');
+  const token = String(req.query.token || '').trim();
+  if (!/^[a-f0-9]{40,128}$/i.test(token)) {
+    flash(req, 'error', 'Reset link is invalid. Request a new one.');
+    return res.redirect('/admin/forgot-password');
+  }
+  const tokenHash = hashAdminToken(token);
+  const reqRow = await query(
+    `SELECT id FROM password_reset_requests
+     WHERE token_hash = $1 AND user_type = 'admin' AND used_at IS NULL AND expires_at >= NOW()`,
+    [tokenHash]
+  );
+  if (reqRow.rowCount === 0) {
+    flash(req, 'error', 'Reset link is invalid or has expired. Request a new one.');
+    return res.redirect('/admin/forgot-password');
+  }
+  res.render('admin_reset_password', { title: 'Admin — Reset password', token, errorMessage: null });
+});
+
+router.post('/admin/reset-password', async (req, res) => {
+  if (req.session.adminId) return res.redirect('/admin');
+  const token = String(req.body.token || '').trim();
+  const password = String(req.body.password || '');
+  const confirmPassword = String(req.body.confirm_password || '');
+
+  const renderError = (msg) => res.status(400).render('admin_reset_password', {
+    title: 'Admin — Reset password', token, errorMessage: msg,
+  });
+
+  if (!/^[a-f0-9]{40,128}$/i.test(token)) return renderError('Invalid reset token.');
+  if (password.length < 8) return renderError('Password must be at least 8 characters.');
+  if (password !== confirmPassword) return renderError('Passwords do not match.');
+
+  const tokenHash = hashAdminToken(token);
+  const reqRow = await query(
+    `SELECT id, user_id FROM password_reset_requests
+     WHERE token_hash = $1 AND user_type = 'admin' AND used_at IS NULL AND expires_at >= NOW()`,
+    [tokenHash]
+  );
+  if (reqRow.rowCount === 0) {
+    flash(req, 'error', 'Reset link is invalid or has expired. Request a new one.');
+    return res.redirect('/admin/forgot-password');
+  }
+
+  const { id: resetId, user_id: adminId } = reqRow.rows[0];
+  const hash = await bcrypt.hash(password, 12);
+  await query('UPDATE admins SET password_hash = $1 WHERE id = $2', [hash, adminId]);
+  await query('UPDATE password_reset_requests SET used_at = NOW() WHERE id = $1', [resetId]);
+
+  flash(req, 'success', 'Admin password updated. You can now log in.');
+  return res.redirect('/admin/login');
+});
+
 export default router;
