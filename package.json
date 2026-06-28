@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": "24.x"
   },
   "scripts": {
     "start": "DOTENV_CONFIG_PATH=.env.production NODE_ENV=production node src/server.js",

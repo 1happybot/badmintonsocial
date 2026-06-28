@@ -43,7 +43,7 @@ A Sweden where every badminton player can instantly find skilled opponents, arra
 
 ## Tech Stack
 
-- **Node.js 18+** / **Express 4.19**
+- **Node.js 24+** / **Express 5.2**
 - **EJS** — server-rendered, modular view templates
 - **PostgreSQL** — persistent storage with session management
 - **express-session** + **connect-pg-simple** — secure session handling
