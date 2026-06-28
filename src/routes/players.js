@@ -8,6 +8,35 @@ import {
   sendVerificationCode,
 } from '../phone-verification.js';
 
+function getTwilioSmsErrorMessage(err) {
+  if (!err) return 'Could not send verification code. Please try again.';
+  if (err.message === 'twilio_not_configured') {
+    return 'Phone verification service is not configured. Set Twilio Verify environment variables.';
+  }
+
+  const code = Number(err.code);
+  if (code === 20003) {
+    return 'Twilio authentication failed. Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.';
+  }
+  if (code === 20404) {
+    return 'Twilio Verify service SID was not found. Check TWILIO_VERIFY_SERVICE_SID.';
+  }
+  if (code === 60200) {
+    return 'The phone number format is invalid for Twilio Verify. Use a valid Swedish mobile number.';
+  }
+  if (code === 60202 || code === 60203) {
+    return 'Too many verification requests. Wait a minute and try again.';
+  }
+  if (code === 60212) {
+    return 'SMS channel is not enabled on your Twilio Verify service.';
+  }
+
+  const detail = typeof err.message === 'string' && err.message.trim() ? err.message.trim() : null;
+  return detail
+    ? `Could not send verification code. Twilio says: ${detail}`
+    : 'Could not send verification code. Please try again.';
+}
+
 export function createPlayerRouter(deps = {}) {
   const {
     query: runQuery = query,
@@ -332,11 +361,7 @@ export function createPlayerRouter(deps = {}) {
       };
       flash(req, 'success', `Verification code sent to ${maskPhone(normalizedPhone)}.`);
     } catch (err) {
-      if (err && err.message === 'twilio_not_configured') {
-        flash(req, 'error', 'Phone verification service is not configured yet. Please set Twilio Verify environment variables.');
-      } else {
-        flash(req, 'error', 'Could not send verification code. Please try again.');
-      }
+      flash(req, 'error', getTwilioSmsErrorMessage(err));
     }
 
     return res.redirect(`/players/${id}/edit`);
