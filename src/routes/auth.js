@@ -301,7 +301,11 @@ router.post('/register', async (req, res) => {
       name: pendingSignup.name,
     });
   } catch (err) {
-    if (err && (err.message === 'sendgrid_not_configured' || err.message === 'twilio_not_configured')) {
+    if (err && typeof err.message === 'string' && err.message.startsWith('sendgrid_not_configured')) {
+      const details = err.message.split(':')[1] || 'SENDGRID_API_KEY|TWILIO_API_KEY,SENDGRID_FROM_EMAIL|TWILIO_FROM_EMAIL';
+      return renderRegisterError(502, `Could not send confirmation email. Missing: ${details}.`);
+    }
+    if (err && err.message === 'twilio_not_configured') {
       return renderRegisterError(502, 'Could not send confirmation email. Configure SENDGRID_API_KEY (or TWILIO_API_KEY) and SENDGRID_FROM_EMAIL.');
     }
     return renderRegisterError(502, 'Could not send confirmation email. Please try again.');
@@ -347,7 +351,10 @@ router.post('/register/check-email/resend', async (req, res) => {
     req.session.pendingSignup = pendingSignup;
     flash(req, 'success', `A new confirmation link was sent to ${maskEmail(pendingSignup.email)}.`);
   } catch (err) {
-    if (err && (err.message === 'sendgrid_not_configured' || err.message === 'twilio_not_configured')) {
+    if (err && typeof err.message === 'string' && err.message.startsWith('sendgrid_not_configured')) {
+      const details = err.message.split(':')[1] || 'SENDGRID_API_KEY|TWILIO_API_KEY,SENDGRID_FROM_EMAIL|TWILIO_FROM_EMAIL';
+      flash(req, 'error', `Email verification is not configured. Missing: ${details}.`);
+    } else if (err && err.message === 'twilio_not_configured') {
       flash(req, 'error', 'Email verification is not configured. Set SendGrid variables for Twilio email link delivery.');
     } else {
       flash(req, 'error', 'Could not resend confirmation email. Please try again.');

@@ -3,7 +3,10 @@ export async function sendSignupVerificationEmail({ toEmail, verificationUrl, na
   const fromEmail = String(process.env.SENDGRID_FROM_EMAIL || process.env.TWILIO_FROM_EMAIL || '').trim();
 
   if (!apiKey || !fromEmail) {
-    throw new Error('sendgrid_not_configured');
+    const missing = [];
+    if (!apiKey) missing.push('SENDGRID_API_KEY|TWILIO_API_KEY');
+    if (!fromEmail) missing.push('SENDGRID_FROM_EMAIL|TWILIO_FROM_EMAIL');
+    throw new Error(`sendgrid_not_configured:${missing.join(',')}`);
   }
 
   const safeName = String(name || '').trim() || 'there';
