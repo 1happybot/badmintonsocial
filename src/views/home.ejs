@@ -1,87 +1,83 @@
 <%- include('partials/header') %>
 
-<section class="home-hero rounded-4 mb-5 overflow-hidden">
-  <div class="row g-0">
-    <div class="col-lg-8">
-      <div class="home-hero__content p-4 p-md-5 p-xl-6">
-        <span class="badge rounded-pill text-bg-light text-dark mb-3 home-hero__badge">
-          <i class="bi bi-stars"></i> TopMinton Sverige
-        </span>
-        <h1 class="display-3 fw-bold mb-3">
-          Play More. <span class="home-hero__accent">Level Up Faster.</span>
-        </h1>
-        <p class="lead mb-4">
+<section class="tm-section" data-anim="hero">
+  <div class="tm-card bg-gradient-to-br from-primary/20 via-secondary/15 to-base-200 overflow-hidden">
+    <div class="tm-card-body grid gap-8 lg:grid-cols-[1.35fr_1fr] items-start md:p-10 lg:p-12">
+      <div class="space-y-6">
+        <span class="badge badge-lg badge-neutral" data-anim="hero-item"><i class="bi bi-stars me-1"></i> TopMinton Sverige</span>
+        <h1 class="tm-title" data-anim="hero-item">Play More. Level Up Faster.</h1>
+        <p class="tm-subtitle max-w-2xl" data-anim="hero-item">
           Sweden's badminton community to find players, host quality sessions, and earn TopMinton points.
         </p>
-        <div class="d-flex flex-wrap gap-2 home-hero__actions">
+        <div class="flex flex-wrap gap-3" data-anim="hero-item">
           <% if (currentUser) { %>
-            <a class="btn btn-light btn-lg" href="/players"><i class="bi bi-people-fill"></i> Find Players</a>
-            <a class="btn btn-outline-light btn-lg" href="/challenges"><i class="bi bi-trophy-fill"></i> Manage Matches</a>
+            <a class="btn btn-primary btn-lg" href="/players"><i class="bi bi-people-fill"></i> Find players</a>
+            <a class="btn btn-outline btn-lg" href="/challenges"><i class="bi bi-trophy-fill"></i> Manage matches</a>
           <% } else { %>
-            <a class="btn btn-light btn-lg" href="/register"><i class="bi bi-person-plus"></i> Start Free</a>
-            <a class="btn btn-outline-light btn-lg" href="/login">I already have one</a>
+            <a class="btn btn-primary btn-lg" href="/register"><i class="bi bi-person-plus"></i> Start free</a>
+            <a class="btn btn-outline btn-lg" href="/login">I already have one</a>
           <% } %>
         </div>
       </div>
-    </div>
-    <div class="col-lg-4">
-      <div class="home-hero__stats h-100 p-4 p-md-5 d-grid gap-3">
-        <div class="home-stat-card">
-          <div class="small text-uppercase opacity-75">Community focus</div>
-          <div class="h5 mb-0">Sweden-only badminton network</div>
+
+      <div class="grid gap-4" data-anim="hero-item">
+        <div class="tm-card bg-base-100/80 border-base-300">
+          <div class="tm-card-body p-5">
+            <div class="text-xs uppercase tracking-[0.12em] text-base-content/60">Community focus</div>
+            <div class="text-xl font-semibold">Sweden-only badminton network</div>
+          </div>
         </div>
-        <div class="home-stat-card">
-          <div class="small text-uppercase opacity-75">Rewards</div>
-          <div class="h5 mb-0">10 pts play · 25 pts host · 50 pts referral</div>
+        <div class="tm-card bg-base-100/80 border-base-300">
+          <div class="tm-card-body p-5">
+            <div class="text-xs uppercase tracking-[0.12em] text-base-content/60">Rewards</div>
+            <div class="text-xl font-semibold">10 pts play · 25 pts host · 50 pts referral</div>
+          </div>
         </div>
-        <div class="home-stat-card">
-          <div class="small text-uppercase opacity-75">Match quality</div>
-          <div class="h5 mb-0">Skill-based discovery and fair-play controls</div>
+        <div class="tm-card bg-base-100/80 border-base-300">
+          <div class="tm-card-body p-5">
+            <div class="text-xs uppercase tracking-[0.12em] text-base-content/60">Match quality</div>
+            <div class="text-xl font-semibold">Skill-based discovery and fair-play controls</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="mb-4 text-center">
-  <h2 class="h4 mb-2"><i class="bi bi-compass"></i> How TopMinton Works</h2>
-  <p class="text-secondary mb-0">Three simple steps to get on the court.</p>
-</section>
-
-<section class="journey-grid">
-  <div class="journey-step">
-    <div class="journey-step-number">1</div>
-    <div class="journey-step-icon bg-primary-subtle text-primary">
-      <i class="bi bi-person-plus"></i>
-    </div>
-    <h3 class="h5 mb-2">Register Your Profile</h3>
-    <p class="text-secondary mb-0">Create your player or doubles-team profile in under a minute.</p>
+<section class="tm-section pt-2" data-anim="section">
+  <div class="text-center mb-8" data-anim="item">
+    <h2 class="text-3xl md:text-4xl font-extrabold mb-3"><i class="bi bi-compass me-2"></i>How TopMinton Works</h2>
+    <p class="text-base-content/70 text-lg">Three clear steps to get on court quickly.</p>
   </div>
 
-  <div class="journey-connector" aria-hidden="true">
-    <i class="bi bi-arrow-right"></i>
-  </div>
-
-  <div class="journey-step">
-    <div class="journey-step-number">2</div>
-    <div class="journey-step-icon bg-info-subtle text-info">
-      <i class="bi bi-people-fill"></i>
-    </div>
-    <h3 class="h5 mb-2">Host or Join Matches</h3>
-    <p class="text-secondary mb-0">Set up a game with friends or jump into matches hosted near you.</p>
-  </div>
-
-  <div class="journey-connector" aria-hidden="true">
-    <i class="bi bi-arrow-right"></i>
-  </div>
-
-  <div class="journey-step">
-    <div class="journey-step-number">3</div>
-    <div class="journey-step-icon bg-warning-subtle text-warning">
-      <i class="bi bi-trophy-fill"></i>
-    </div>
-    <h3 class="h5 mb-2">Earn Points &amp; Recognition</h3>
-    <p class="text-secondary mb-0">Get points for hosting and participating, and unlock badges as you play.</p>
+  <div class="grid gap-5 md:grid-cols-3">
+    <article class="tm-card" data-anim="item">
+      <div class="tm-card-body">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="badge badge-primary badge-lg">1</span>
+          <h3 class="text-2xl font-bold mb-0">Register profile</h3>
+        </div>
+        <p class="text-base-content/75 text-lg">Create your player or doubles-team profile in under a minute.</p>
+      </div>
+    </article>
+    <article class="tm-card" data-anim="item">
+      <div class="tm-card-body">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="badge badge-secondary badge-lg">2</span>
+          <h3 class="text-2xl font-bold mb-0">Host or join</h3>
+        </div>
+        <p class="text-base-content/75 text-lg">Set up a game with friends or jump into nearby hosted sessions.</p>
+      </div>
+    </article>
+    <article class="tm-card" data-anim="item">
+      <div class="tm-card-body">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="badge badge-accent badge-lg">3</span>
+          <h3 class="text-2xl font-bold mb-0">Earn recognition</h3>
+        </div>
+        <p class="text-base-content/75 text-lg">Collect points and unlock badges as you contribute to the community.</p>
+      </div>
+    </article>
   </div>
 </section>
 
@@ -91,63 +87,67 @@
   }
 %>
 
-<section class="mt-5">
-  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-    <h2 class="h4 mb-0"><i class="bi bi-calendar-event text-primary"></i> Open matches near you</h2>
+<section class="tm-section pt-3" data-anim="section">
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-5" data-anim="item">
+    <h2 class="text-3xl md:text-4xl font-extrabold mb-0"><i class="bi bi-calendar-event text-primary me-2"></i>Open matches near you</h2>
     <% if (currentUser) { %>
-      <a href="/challenges" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-right-circle"></i> All matches</a>
+      <a href="/challenges" class="btn btn-outline btn-lg"><i class="bi bi-arrow-right-circle"></i> All matches</a>
     <% } %>
   </div>
 
   <% if (!openMatches || openMatches.length === 0) { %>
-    <div class="card tile">
-      <div class="card-body text-center text-secondary py-4">
-        <i class="bi bi-emoji-neutral fs-4 d-block mb-2"></i>
+    <div class="tm-card" data-anim="item">
+      <div class="tm-card-body text-center text-base-content/70 py-12">
+        <i class="bi bi-emoji-neutral text-4xl d-block mb-3"></i>
         No open matches right now.
         <% if (currentUser) { %>
-          <a href="/challenges" class="d-block mt-2">Host one for the community →</a>
+          <a href="/challenges" class="link link-primary d-block mt-3">Host one for the community</a>
         <% } else { %>
-          <a href="/register" class="d-block mt-2">Join TopMinton to host your own →</a>
+          <a href="/register" class="link link-primary d-block mt-3">Join TopMinton to host your own</a>
         <% } %>
       </div>
     </div>
   <% } else { %>
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
       <% openMatches.forEach(function(m){
            const isFull = m.joined_count >= m.max_players;
            const isHost = currentUser && currentUser.id === m.host_id;
       %>
-        <div class="col">
-          <div class="card tile h-100 home-match-card">
-            <div class="card-body d-flex flex-column">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <h3 class="h6 mb-0">
-                  <a href="/hosted-matches/<%= m.id %>" target="_blank" rel="noopener noreferrer" class="text-decoration-none stretched-link"><%= m.title %></a>
+        <article class="tm-card" data-anim="item">
+          <div class="tm-card-body gap-4">
+              <div class="flex justify-between items-start gap-3">
+                <h3 class="text-xl font-bold leading-tight">
+                  <a href="/hosted-matches/<%= m.id %>" target="_blank" rel="noopener noreferrer" class="link link-hover"><%= m.title %></a>
                 </h3>
-                <span class="badge text-bg-<%= isFull ? 'warning' : 'success' %>"><%= isFull ? 'full' : 'open' %></span>
+                <span class="badge badge-<%= isFull ? 'warning' : 'success' %> badge-lg"><%= isFull ? 'full' : 'open' %></span>
               </div>
-              <div class="small text-secondary mb-3">
+
+              <div class="space-y-1 text-base-content/75">
                 <div><i class="bi bi-person"></i> Host: <%= m.host_name %></div>
                 <div><i class="bi bi-calendar-event"></i> <%= fmtMatchDate(m.scheduled_at) %></div>
                 <div><i class="bi bi-geo-alt"></i> <%= m.location %></div>
                 <div><i class="bi bi-people"></i> <%= m.joined_count %>/<%= m.max_players %> players</div>
               </div>
-              <div class="mt-auto small">
+
+              <div class="mt-1 text-base">
                 <% if (!currentUser) { %>
                   <span class="text-primary"><i class="bi bi-box-arrow-in-right"></i> Log in to join</span>
                 <% } else if (isHost) { %>
-                  <span class="text-secondary"><i class="bi bi-star"></i> You are the host</span>
+                  <span class="text-base-content/70"><i class="bi bi-star"></i> You are the host</span>
                 <% } else if (m.am_joined) { %>
                   <span class="text-success"><i class="bi bi-check-circle"></i> You joined</span>
                 <% } else if (isFull) { %>
-                  <span class="text-secondary"><i class="bi bi-slash-circle"></i> Match is full</span>
+                  <span class="text-base-content/70"><i class="bi bi-slash-circle"></i> Match is full</span>
                 <% } else { %>
                   <span class="text-primary"><i class="bi bi-arrow-right-circle"></i> View &amp; join</span>
                 <% } %>
               </div>
-            </div>
+
+              <div class="pt-2">
+                <a href="/hosted-matches/<%= m.id %>" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-wide">Open session</a>
+              </div>
           </div>
-        </div>
+        </article>
       <% }) %>
     </div>
   <% } %>

@@ -54,6 +54,10 @@ export function maskEmail(email) {
 }
 
 export async function sendVerificationCode(phoneNumber) {
+  if (!phoneNumber || typeof phoneNumber !== 'string') {
+    throw new Error('invalid_phone_number');
+  }
+
   const client = buildClient();
   if (!client) {
     throw new Error('twilio_not_configured');
@@ -65,6 +69,15 @@ export async function sendVerificationCode(phoneNumber) {
 }
 
 export async function checkVerificationCode(phoneNumber, code) {
+  if (!phoneNumber || typeof phoneNumber !== 'string') {
+    throw new Error('invalid_phone_number');
+  }
+
+  const normalizedCode = String(code || '').trim();
+  if (!normalizedCode) {
+    throw new Error('invalid_code');
+  }
+
   const client = buildClient();
   if (!client) {
     throw new Error('twilio_not_configured');
@@ -72,7 +85,7 @@ export async function checkVerificationCode(phoneNumber, code) {
 
   return client.sdk.verify.v2
     .services(client.verifyServiceSid)
-    .verificationChecks.create({ to: phoneNumber, code: String(code || '').trim() });
+    .verificationChecks.create({ to: phoneNumber, code: normalizedCode });
 }
 
 export async function sendEmailVerificationCode(email) {

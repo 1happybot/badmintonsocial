@@ -1,3 +1,4 @@
+    </div>
   </div>
 </main>
 <footer class="border-top bg-body-tertiary mt-auto py-3">
@@ -35,6 +36,9 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="/ui-animations.js"></script>
 
 <script>
   // Theme toggle functionality with persistence
@@ -43,22 +47,18 @@
     const themeToggle = document.getElementById('themeToggle');
     const THEME_STORAGE_KEY = 'topminton-theme';
     
-    // Get initial theme from localStorage or system preference
+    // Get initial theme from localStorage or default light theme
     function getInitialTheme() {
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
       if (stored) return stored;
-      
-      // Check system preference
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-        return 'light';
-      }
-      return 'dark';
+      return 'light';
     }
     
     // Set theme
     function setTheme(theme) {
       const isDark = theme === 'dark';
       htmlElement.setAttribute('data-bs-theme', theme);
+      htmlElement.setAttribute('data-theme', isDark ? 'topmintondark' : 'topmintonlight');
       localStorage.setItem(THEME_STORAGE_KEY, theme);
       
       // Update icon

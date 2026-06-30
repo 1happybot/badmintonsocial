@@ -8,10 +8,16 @@ import {
   sendVerificationCode,
 } from '../phone-verification.js';
 
+const RESEND_COOLDOWN_MS = 60 * 1000;
+const CODE_TTL_MS = 10 * 60 * 1000;
+
 function getTwilioSmsErrorMessage(err) {
   if (!err) return 'Could not send verification code. Please try again.';
   if (err.message === 'twilio_not_configured') {
     return 'Phone verification service is not configured. Set Twilio Verify environment variables.';
+  }
+  if (err.message === 'invalid_phone_number') {
+    return 'Please enter a valid Swedish phone number.';
   }
 
   const code = Number(err.code);
@@ -35,6 +41,35 @@ function getTwilioSmsErrorMessage(err) {
   return detail
     ? `Could not send verification code. Twilio says: ${detail}`
     : 'Could not send verification code. Please try again.';
+}
+
+function getTwilioCheckErrorMessage(err) {
+  if (!err) return 'Could not verify code. Please try again.';
+  if (err.message === 'twilio_not_configured') {
+    return 'Phone verification service is not configured.';
+  }
+  if (err.message === 'invalid_phone_number' || err.message === 'invalid_code') {
+    return 'Verification failed. Please request a new code.';
+  }
+
+  const code = Number(err.code);
+  if (code === 20003) {
+    return 'Twilio authentication failed. Contact support.';
+  }
+  if (code === 20404) {
+    return 'Twilio Verify service SID was not found. Contact support.';
+  }
+  if (code === 60202) {
+    return 'Too many incorrect attempts. Please request a new verification code.';
+  }
+  if (code === 60200) {
+    return 'Verification code is invalid. Please request a new code.';
+  }
+
+  const detail = typeof err.message === 'string' && err.message.trim() ? err.message.trim() : null;
+  return detail
+    ? `Could not verify code. Twilio says: ${detail}`
+    : 'Could not verify code. Please try again.';
 }
 
 export function createPlayerRouter(deps = {}) {
@@ -352,6 +387,17 @@ export function createPlayerRouter(deps = {}) {
       return res.redirect(`/players/${id}/edit`);
     }
 
+    const existing = req.session.phoneVerification;
+    if (
+      existing &&
+      existing.userId === id &&
+      existing.phoneNumber === normalizedPhone &&
+      Date.now() - existing.requestedAt < RESEND_COOLDOWN_MS
+    ) {
+      flash(req, 'error', 'A code was recently sent to this number. Please wait before requesting another.');
+      return res.redirect(`/players/${id}/edit`);
+    }
+
     try {
       await sendVerificationCode(normalizedPhone);
       req.session.phoneVerification = {
@@ -378,6 +424,12 @@ export function createPlayerRouter(deps = {}) {
       return res.redirect(`/players/${id}/edit`);
     }
 
+    if (Date.now() - verification.requestedAt > CODE_TTL_MS) {
+      req.session.phoneVerification = null;
+      flash(req, 'error', 'Verification code expired. Please request a new one.');
+      return res.redirect(`/players/${id}/edit`);
+    }
+
     const code = String(req.body.verification_code || '').trim();
     if (!/^\d{4,10}$/.test(code)) {
       flash(req, 'error', 'Enter a valid verification code.');
@@ -400,8 +452,8 @@ export function createPlayerRouter(deps = {}) {
       );
       req.session.phoneVerification = null;
       flash(req, 'success', 'Phone number verified successfully.');
-    } catch (_err) {
-      flash(req, 'error', 'Could not verify code. Please try again.');
+    } catch (err) {
+      flash(req, 'error', getTwilioCheckErrorMessage(err));
     }
 
     return res.redirect(`/players/${id}/edit`);

@@ -1,0 +1,90 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+@plugin "daisyui" {
+  themes: topmintonlight --default, topmintondark --prefersdark;
+}
+
+@plugin "daisyui/theme" {
+  name: "topmintonlight";
+  default: true;
+  color-scheme: light;
+  --color-base-100: #f8fafc;
+  --color-base-200: #ffffff;
+  --color-base-300: #d7e0ec;
+  --color-base-content: #13243a;
+  --color-primary: #15803d;
+  --color-primary-content: #f3fff7;
+  --color-secondary: #0284c7;
+  --color-secondary-content: #f0f9ff;
+  --color-accent: #c2410c;
+  --color-accent-content: #fff7ed;
+  --color-neutral: #e2e8f0;
+  --color-neutral-content: #1e293b;
+  --color-info: #0369a1;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-error: #b91c1c;
+  --radius-selector: 1rem;
+  --radius-field: 0.85rem;
+  --radius-box: 1.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "topmintondark";
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: #101827;
+  --color-base-200: #162133;
+  --color-base-300: #27364d;
+  --color-base-content: #e8eff8;
+  --color-primary: #16a34a;
+  --color-primary-content: #effff4;
+  --color-secondary: #0ea5e9;
+  --color-secondary-content: #f0faff;
+  --color-accent: #f59e0b;
+  --color-accent-content: #2c1800;
+  --color-neutral: #2a3a52;
+  --color-neutral-content: #e5edf7;
+  --color-info: #0284c7;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+  --radius-selector: 1rem;
+  --radius-field: 0.85rem;
+  --radius-box: 1.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+@source "./src/views/**/*.{ejs,html}";
+@source "./src/views/partials/**/*.{ejs,html}";
+
+@layer components {
+  .tm-shell {
+    @apply mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8;
+  }
+
+  .tm-section {
+    @apply py-10 md:py-14;
+  }
+
+  .tm-card {
+    @apply card border border-base-300 bg-base-200 shadow-xl;
+  }
+
+  .tm-card-body {
+    @apply card-body p-6 md:p-8;
+  }
+
+  .tm-title {
+    @apply text-3xl md:text-5xl font-black tracking-tight leading-tight;
+  }
+
+  .tm-subtitle {
+    @apply text-base md:text-lg text-base-content/75 leading-relaxed;
+  }
+}

@@ -11,6 +11,8 @@
     "start": "DOTENV_CONFIG_PATH=.env.production NODE_ENV=production node src/server.js",
     "dev": "DOTENV_CONFIG_PATH=.env.development NODE_ENV=development node --watch src/server.js",
     "prod": "DOTENV_CONFIG_PATH=.env.production NODE_ENV=production node src/server.js",
+    "build:ui": "tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --minify",
+    "dev:ui": "tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --watch",
     "seed:demo": "node src/seed_demo.js",
     "test": "DATABASE_URL=postgresql://localhost/topminton_test node --test test/*.test.js"
   },
@@ -21,14 +23,19 @@
     "ejs": "^6.0.1",
     "express": "^5.2.1",
     "express-session": "^1.18.0",
+    "gsap": "^3.15.0",
     "pg": "^8.12.0",
-    "twilio": "^5.13.1"
+    "twilio": "^6.0.2"
   },
   "devDependencies": {
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/github": "^12.0.8",
     "@semantic-release/release-notes-generator": "^14.1.1",
+    "@tailwindcss/cli": "^4.3.2",
+    "@tailwindcss/forms": "^0.5.11",
+    "daisyui": "^5.6.6",
     "semantic-release": "^25.0.5",
-    "supertest": "^7.2.2"
+    "supertest": "^7.2.2",
+    "tailwindcss": "^4.3.2"
   }
 }
