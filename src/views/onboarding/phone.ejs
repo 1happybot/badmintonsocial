@@ -1,0 +1,254 @@
+<%- include('../partials/header') %>
+
+<div id="onboarding-phone" class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <!-- Progress Bar -->
+      <div class="mb-4">
+        <div class="text-center small text-secondary mb-2">Step 1 of 3</div>
+        <div class="progress" role="progressbar" style="height: 8px;">
+          <div class="progress-bar" style="width: 33%;"></div>
+        </div>
+      </div>
+
+      <!-- Header -->
+      <div class="text-center mb-5">
+        <div class="display-6 mb-3">
+          <% if (isVerified) { %>
+            <i class="bi bi-check-circle" style="color: #4caf50;"></i>
+          <% } else { %>
+            <i class="bi bi-telephone" style="color: #2196F3;"></i>
+          <% } %>
+        </div>
+        <h1 class="mb-2">
+          <% if (isVerified) { %>
+            Phone Verified! ✓
+          <% } else { %>
+            Verify Your Phone
+          <% } %>
+        </h1>
+        <p class="lead text-secondary">
+          <% if (isVerified) { %>
+            You're all set! You can now challenge players and join events.
+          <% } else { %>
+            We'll send a code to your phone via SMS. This only takes 30 seconds.
+          <% } %>
+        </p>
+      </div>
+
+      <% if (!isVerified) { %>
+        <!-- Phone Verification Form -->
+        <div class="card tile mb-4">
+          <div class="card-body">
+            <h5 class="card-title mb-3"><i class="bi bi-shield-check"></i> Why verify?</h5>
+            <ul class="list-unstyled small text-secondary">
+              <li class="mb-2"><i class="bi bi-check-lg text-success"></i> Challenge other players</li>
+              <li class="mb-2"><i class="bi bi-check-lg text-success"></i> Join hosted matches</li>
+              <li class="mb-2"><i class="bi bi-check-lg text-success"></i> Get notifications</li>
+              <li class="mb-2"><i class="bi bi-check-lg text-success"></i> Build your reputation</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Phone Input -->
+        <div class="mb-4">
+          <label class="form-label">Swedish Phone Number</label>
+          <input 
+            type="tel" 
+            id="phone-input" 
+            class="form-control form-control-lg" 
+            placeholder="+46 70 123 45 67"
+            value="<%= phoneNumber %>"
+          >
+          <div class="form-text mt-2">
+            Include country code: <strong>+46</strong> (Sweden)
+          </div>
+        </div>
+
+        <!-- Send Code Button -->
+        <button class="btn btn-primary btn-lg w-100 mb-3" id="send-code-btn">
+          <span id="send-code-text">Send Verification Code</span>
+          <span id="send-code-spinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+        </button>
+
+        <!-- Error Alert -->
+        <div id="phone-error" class="alert alert-danger d-none" role="alert"></div>
+
+        <!-- Verification Code Input (hidden initially) -->
+        <div id="code-section" class="d-none">
+          <div class="alert alert-info small mb-3">
+            <i class="bi bi-info-circle"></i> Code sent! It's valid for 10 minutes.
+          </div>
+          <label class="form-label">Enter Verification Code</label>
+          <input 
+            type="text" 
+            id="code-input" 
+            class="form-control form-control-lg text-center" 
+            placeholder="000000"
+            maxlength="6"
+            style="letter-spacing: 0.5em; font-size: 1.5rem; font-weight: bold;"
+          >
+          <button class="btn btn-success btn-lg w-100 mt-3" id="verify-code-btn">
+            <span id="verify-code-text">Verify Code</span>
+            <span id="verify-code-spinner" class="spinner-border spinner-border-sm ms-2 d-none"></span>
+          </button>
+          <div id="code-error" class="alert alert-danger mt-3 d-none" role="alert"></div>
+        </div>
+      <% } %>
+
+      <% if (isVerified) { %>
+        <!-- Verified State -->
+        <div class="alert alert-success mb-4" role="alert">
+          <i class="bi bi-check-circle"></i> Phone verified at <%= new Date(req.user.phone_verified_at).toLocaleDateString() %>
+        </div>
+
+        <div class="text-center mb-4">
+          <div class="h5 mb-3">You're verified! Time for your first event.</div>
+        </div>
+      <% } %>
+
+      <!-- Skip & Continue Buttons -->
+      <div class="d-flex gap-2">
+        <% if (isVerified) { %>
+          <button class="btn btn-primary flex-grow-1" id="continue-verified-btn">
+            Next Step <i class="bi bi-arrow-right"></i>
+          </button>
+        <% } else { %>
+          <button class="btn btn-ghost flex-grow-1" id="skip-phone-btn">
+            Skip for now
+          </button>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let verifyingPhone = null;
+
+// Send Code Handler
+document.getElementById('send-code-btn').addEventListener('click', async () => {
+  const phone = document.getElementById('phone-input').value.trim();
+  const errorEl = document.getElementById('phone-error');
+  errorEl.classList.add('d-none');
+
+  if (!phone) {
+    errorEl.textContent = 'Please enter your phone number.';
+    errorEl.classList.remove('d-none');
+    return;
+  }
+
+  const btn = document.getElementById('send-code-btn');
+  const spinner = document.getElementById('send-code-spinner');
+  const text = document.getElementById('send-code-text');
+  
+  btn.disabled = true;
+  spinner.classList.remove('d-none');
+
+  try {
+    const response = await fetch('/onboarding/phone/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      verifyingPhone = phone;
+      document.getElementById('code-section').classList.remove('d-none');
+      document.getElementById('code-input').focus();
+    } else {
+      errorEl.textContent = data.error || 'Failed to send code.';
+      errorEl.classList.remove('d-none');
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    errorEl.textContent = 'Network error. Please try again.';
+    errorEl.classList.remove('d-none');
+  } finally {
+    btn.disabled = false;
+    spinner.classList.add('d-none');
+  }
+});
+
+// Verify Code Handler
+document.getElementById('verify-code-btn').addEventListener('click', async () => {
+  const code = document.getElementById('code-input').value.trim();
+  const codeError = document.getElementById('code-error');
+  codeError.classList.add('d-none');
+
+  if (!code || code.length !== 6) {
+    codeError.textContent = 'Please enter a 6-digit code.';
+    codeError.classList.remove('d-none');
+    return;
+  }
+
+  const btn = document.getElementById('verify-code-btn');
+  const spinner = document.getElementById('verify-code-spinner');
+  const text = document.getElementById('verify-code-text');
+  
+  btn.disabled = true;
+  spinner.classList.remove('d-none');
+
+  try {
+    const response = await fetch('/onboarding/phone/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      // Show success message and reload to show verified state
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    } else {
+      codeError.textContent = data.error || 'Verification failed.';
+      codeError.classList.remove('d-none');
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    codeError.textContent = 'Network error. Please try again.';
+    codeError.classList.remove('d-none');
+  } finally {
+    btn.disabled = false;
+    spinner.classList.add('d-none');
+  }
+});
+
+// Skip Phone Verification
+document.getElementById('skip-phone-btn')?.addEventListener('click', async () => {
+  try {
+    const response = await fetch('/onboarding/first-event', { method: 'GET' });
+    if (response.ok) {
+      window.location.href = '/onboarding/first-event';
+    }
+  } catch (err) {
+    console.error('Error:', err);
+  }
+});
+
+// Continue from Verified State
+document.getElementById('continue-verified-btn')?.addEventListener('click', () => {
+  window.location.href = '/onboarding/first-event';
+});
+
+// Auto-format phone input
+document.getElementById('phone-input')?.addEventListener('input', (e) => {
+  let value = e.target.value.replace(/\D/g, '');
+  if (value.length > 0 && !value.startsWith('46')) {
+    value = '46' + value;
+  }
+  if (value.length > 0) {
+    e.target.value = '+' + value;
+  }
+});
+
+// Format code input to show only numbers
+document.getElementById('code-input')?.addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+});
+</script>
+
+<%- include('../partials/footer') %>

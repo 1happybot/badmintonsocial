@@ -1,0 +1,279 @@
+<%- include('../partials/header') %>
+
+<div id="onboarding-first-event" class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <!-- Progress Bar -->
+      <div class="mb-4">
+        <div class="text-center small text-secondary mb-2">Step 2 of 3</div>
+        <div class="progress" role="progressbar" style="height: 8px;">
+          <div class="progress-bar" style="width: 66%;"></div>
+        </div>
+      </div>
+
+      <!-- Header -->
+      <div class="text-center mb-5">
+        <div class="display-6 mb-3">
+          <i class="bi bi-calendar-event" style="color: #ff6b35;"></i>
+        </div>
+        <h1 class="mb-2">Your First Event</h1>
+        <p class="lead text-secondary">
+          What would you like to do? We'll guide you through it.
+        </p>
+      </div>
+
+      <!-- Choice Cards -->
+      <div class="row g-3 mb-4">
+        <!-- Join an Event -->
+        <div class="col-6">
+          <div class="card tile choice-card h-100" id="join-card" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            <div class="card-body text-center">
+              <div class="h2 mb-3" style="color: #4ecdc4;">
+                <i class="bi bi-person-plus"></i>
+              </div>
+              <h5 class="card-title mb-2">Join a Match</h5>
+              <p class="card-text small text-secondary">
+                Browse hosted matches in your area and join players with your skill level.
+              </p>
+              <div class="mt-3">
+                <span class="badge text-bg-info">Recommended</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Host an Event -->
+        <div class="col-6">
+          <div class="card tile choice-card h-100" id="host-card" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            <div class="card-body text-center">
+              <div class="h2 mb-3" style="color: #f38181;">
+                <i class="bi bi-megaphone"></i>
+              </div>
+              <h5 class="card-title mb-2">Host an Event</h5>
+              <p class="card-text small text-secondary">
+                Invite players to your neighborhood and organize the perfect badminton session.
+              </p>
+              <div class="mt-3">
+                <span class="badge text-bg-secondary">Advanced</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Referral Code Section (Optional) -->
+      <div class="card tile mb-4 bg-base-200">
+        <div class="card-body">
+          <h5 class="card-title mb-3">
+            <i class="bi bi-gift"></i> Got a Referral Code?
+          </h5>
+          <p class="small text-secondary mb-3">
+            Enter a friend's referral code to earn <strong>+100 TopMinton points</strong>!
+          </p>
+          <div class="input-group">
+            <input 
+              type="text" 
+              id="referral-code-input" 
+              class="form-control" 
+              placeholder="Paste friend's code here"
+              maxlength="8"
+              style="text-transform: uppercase; letter-spacing: 1px;"
+            >
+            <button class="btn btn-outline-primary" type="button" id="verify-referral-btn">
+              <i class="bi bi-check-lg"></i> Verify
+            </button>
+          </div>
+          <div id="referral-feedback" class="small mt-2"></div>
+        </div>
+      </div>
+
+      <!-- Info Card -->
+      <div class="card tile mb-4 bg-base-200">
+        <div class="card-body">
+          <h5 class="card-title mb-2"><i class="bi bi-lightbulb"></i> Quick Tips</h5>
+          <ul class="list-unstyled small text-secondary">
+            <li class="mb-2"><strong>Find your skill level:</strong> Filter by rating to play with people at your level</li>
+            <li class="mb-2"><strong>Read reviews:</strong> Check player profiles to see reputation</li>
+            <li class="mb-2"><strong>Respect the rules:</strong> Show up on time and play fairly</li>
+            <li class="mb-2"><strong>Earn rewards:</strong> Each match played increases your TopMinton points</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Skip Option -->
+      <div class="d-grid gap-2">
+        <button class="btn btn-ghost" id="skip-first-event-btn">
+          Maybe later, take me to the dashboard
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@popper/core@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/shepherd.js@13/dist/shepherd.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@13/dist/shepherd.css">
+<style>
+  .shepherd-element {
+    max-width: 400px;
+  }
+  .shepherd-element .shepherd-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border: none;
+  }
+  .shepherd-element .shepherd-header {
+    font-weight: 600;
+    color: #ff6b35;
+    padding: 1.5rem 1.5rem 1rem;
+  }
+  .shepherd-element .shepherd-text {
+    padding: 0 1.5rem 1rem;
+    color: #555;
+    line-height: 1.6;
+  }
+  .shepherd-element .shepherd-footer {
+    padding: 1rem 1.5rem;
+    background: #fafafa;
+    border-top: 1px solid #eee;
+    border-radius: 0 0 12px 12px;
+  }
+  .shepherd-button {
+    background: #ff6b35;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.6rem 1.2rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .shepherd-button:hover {
+    background: #e55a23;
+  }
+</style>
+
+<script>
+// Initialize Shepherd tour for guided experience
+const tour = new Shepherd.Tour({
+  useModalOverlay: true,
+  defaultStepOptions: {
+    classes: 'shepherd-theme-custom',
+    scrollTo: { behavior: 'smooth', block: 'center' },
+    cancelIcon: { enabled: true },
+  }
+});
+
+tour.addStep({
+  id: 'welcome-tour',
+  title: 'Your First Event',
+  text: 'Choose whether you want to join an existing match or create one yourself. Most new players start by joining!',
+  attachTo: {
+    element: '.choice-card',
+    on: 'bottom'
+  },
+  buttons: [
+    {
+      action() {
+        return this.next();
+      },
+      text: 'Got it!'
+    }
+  ]
+});
+
+tour.start();
+
+// Join Card Handler
+document.getElementById('join-card').addEventListener('click', () => {
+  tour.complete();
+  completeOnboarding('join');
+});
+
+// Host Card Handler
+document.getElementById('host-card').addEventListener('click', () => {
+  tour.complete();
+  completeOnboarding('host');
+});
+
+// Skip Handler
+document.getElementById('skip-first-event-btn').addEventListener('click', () => {
+  tour.complete();
+  completeOnboarding('skip');
+});
+
+// Verify Referral Code Handler
+document.getElementById('verify-referral-btn')?.addEventListener('click', async () => {
+  const code = document.getElementById('referral-code-input').value.trim().toUpperCase();
+  const feedback = document.getElementById('referral-feedback');
+  
+  if (!code) {
+    feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle"></i> Please enter a code</span>';
+    return;
+  }
+  
+  if (code.length !== 8) {
+    feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle"></i> Code must be 8 characters</span>';
+    return;
+  }
+  
+  // Simulate verification (real verification happens on server)
+  feedback.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> Code verified! Bonus will be applied.</span>';
+});
+
+async function completeOnboarding(action) {
+  try {
+    const referralCode = document.getElementById('referral-code-input')?.value.trim() || '';
+    let endpoint = '/onboarding/first-event/complete';
+    let redirect = '/challenges';
+
+    if (action === 'skip') {
+      endpoint = '/onboarding/first-event/skip';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await response.json();
+      if (data.success) {
+        window.location.href = data.redirect;
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
+    } else {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, referral_code: referralCode })
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Show bonus notification if applicable
+        if (data.bonus_applied > 0) {
+          showBonusNotification(data.bonus_applied);
+        }
+        setTimeout(() => {
+          window.location.href = data.redirect;
+        }, 1500);
+      } else {
+        alert(data.error || 'Something went wrong. Please try again.');
+      }
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    alert('Failed to complete onboarding.');
+  }
+}
+
+function showBonusNotification(points) {
+  const notification = document.createElement('div');
+  notification.className = 'position-fixed bottom-0 end-0 m-4 alert alert-success';
+  notification.style.zIndex = '9999';
+  notification.innerHTML = `
+    <i class="bi bi-gift-fill"></i> Referral bonus: <strong>+${points} TopMinton points!</strong>
+  `;
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 3000);
+}
+</script>
+
+<%- include('../partials/footer') %>

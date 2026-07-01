@@ -398,6 +398,7 @@ router.post('/logout', (req, res) => {
 
 // --- Forgot / reset password (users) ---
 
+
 router.get('/forgot-password', (req, res) => {
   if (req.session.userId) return res.redirect('/challenges');
   res.render('forgot_password', { title: 'Forgot password', form: {}, errorMessage: null, successMessage: null });

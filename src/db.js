@@ -96,6 +96,13 @@ export async function initSchema() {
     ALTER TABLE users DROP CONSTRAINT IF EXISTS users_skill_rating_check;
     ALTER TABLE users ADD CONSTRAINT users_skill_rating_check CHECK (skill_rating BETWEEN 1 AND 10);
 
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMPTZ;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_step TEXT DEFAULT 'welcome' CHECK (onboarding_step IN ('welcome', 'phone', 'first_event', 'completed'));
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_skipped_at TIMESTAMPTZ;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS applied_referral_code TEXT REFERENCES users(referral_code) ON DELETE SET NULL;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_bonus_points INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_bonus_applied_at TIMESTAMPTZ;
+
     CREATE TABLE IF NOT EXISTS challenges (
       id SERIAL PRIMARY KEY,
       challenger_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -292,6 +299,38 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_wall_shame_appeals_status ON wall_of_shame_appeals(status);
     CREATE INDEX IF NOT EXISTS idx_email_verification_email ON email_verification_requests(email);
     CREATE INDEX IF NOT EXISTS idx_email_verification_expires ON email_verification_requests(expires_at);
+
+    CREATE TABLE IF NOT EXISTS onboarding_metrics (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      step TEXT NOT NULL CHECK (step IN ('welcome', 'phone', 'first_event', 'completed')),
+      action TEXT NOT NULL CHECK (action IN ('viewed', 'completed', 'skipped')),
+      time_spent_seconds INTEGER,
+      device TEXT,
+      ip_address TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_onboarding_metrics_user ON onboarding_metrics(user_id);
+    CREATE INDEX IF NOT EXISTS idx_onboarding_metrics_step ON onboarding_metrics(step);
+    CREATE INDEX IF NOT EXISTS idx_onboarding_metrics_created ON onboarding_metrics(created_at);
+
+    CREATE TABLE IF NOT EXISTS referral_bonuses (
+      id SERIAL PRIMARY KEY,
+      referrer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      referee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      bonus_points INTEGER NOT NULL DEFAULT 100,
+      referrer_bonus_points INTEGER NOT NULL DEFAULT 50,
+      status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'claimed')) DEFAULT 'approved',
+      referee_claimed_at TIMESTAMPTZ,
+      referrer_claimed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(referrer_id, referee_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_referral_bonuses_referrer ON referral_bonuses(referrer_id);
+    CREATE INDEX IF NOT EXISTS idx_referral_bonuses_referee ON referral_bonuses(referee_id);
+    CREATE INDEX IF NOT EXISTS idx_referral_bonuses_status ON referral_bonuses(status);
 
     CREATE TABLE IF NOT EXISTS session (
       sid varchar NOT NULL COLLATE "default" PRIMARY KEY,

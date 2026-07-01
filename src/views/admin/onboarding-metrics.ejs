@@ -1,0 +1,390 @@
+<%- include('../partials/header') %>
+
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col">
+      <h1 class="mb-1"><i class="bi bi-graph-up"></i> Onboarding Analytics</h1>
+      <p class="text-secondary mb-0">Track new user registration and onboarding flow metrics</p>
+    </div>
+    <div class="col-auto">
+      <a href="/admin" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Admin
+      </a>
+    </div>
+  </div>
+
+  <!-- Key Metrics Row -->
+  <div class="row g-3 mb-4">
+    <!-- Total Users -->
+    <div class="col-md-3">
+      <div class="card tile h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="text-secondary small mb-2">Total Registrations (90d)</p>
+              <h2 class="mb-0" style="color: #2196F3;"><%= completionStats.total_users %></h2>
+            </div>
+            <div class="h3" style="color: #2196F3; opacity: 0.3;">
+              <i class="bi bi-people"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completion Rate -->
+    <div class="col-md-3">
+      <div class="card tile h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="text-secondary small mb-2">Completion Rate</p>
+              <h2 class="mb-0" style="color: #4caf50;">
+                <%= completionStats.total_users > 0 ? Math.round(100 * completionStats.completed / completionStats.total_users) : 0 %>%
+              </h2>
+              <p class="text-secondary small mt-1 mb-0">
+                <%= completionStats.completed %> / <%= completionStats.total_users %>
+              </p>
+            </div>
+            <div class="h3" style="color: #4caf50; opacity: 0.3;">
+              <i class="bi bi-check-circle"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone Verification -->
+    <div class="col-md-3">
+      <div class="card tile h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="text-secondary small mb-2">Phone Verified</p>
+              <h2 class="mb-0" style="color: #ff9800;">
+                <%= phoneVerificationStats.success_rate || 0 %>%
+              </h2>
+              <p class="text-secondary small mt-1 mb-0">
+                <%= phoneVerificationStats.verified_count %> / <%= phoneVerificationStats.total_attempted %>
+              </p>
+            </div>
+            <div class="h3" style="color: #ff9800; opacity: 0.3;">
+              <i class="bi bi-telephone"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Referrals -->
+    <div class="col-md-3">
+      <div class="card tile h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="text-secondary small mb-2">Referral Signups</p>
+              <h2 class="mb-0" style="color: #f44336;">
+                <%= referralStats.total_referrals %>
+              </h2>
+              <p class="text-secondary small mt-1 mb-0">
+                <%= referralStats.total_bonus_points_issued %> points issued
+              </p>
+            </div>
+            <div class="h3" style="color: #f44336; opacity: 0.3;">
+              <i class="bi bi-gift"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-3 mb-4">
+    <!-- Completion Trend -->
+    <div class="col-lg-8">
+      <div class="card tile">
+        <div class="card-body">
+          <h5 class="card-title mb-4">
+            <i class="bi bi-graph-up"></i> Completion Trend (Last 7 Days)
+          </h5>
+          <div style="position: relative; height: 300px;">
+            <canvas id="trend-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completion Breakdown -->
+    <div class="col-lg-4">
+      <div class="card tile">
+        <div class="card-body">
+          <h5 class="card-title mb-4">
+            <i class="bi bi-pie-chart"></i> Onboarding Status
+          </h5>
+          <div class="d-flex flex-column gap-3">
+            <div>
+              <div class="d-flex justify-content-between small mb-1">
+                <span>Completed</span>
+                <span class="text-success fw-bold"><%= completionStats.completed %></span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-success" style="width: <%= completionStats.total_users > 0 ? 100 * completionStats.completed / completionStats.total_users : 0 %>%;"></div>
+              </div>
+            </div>
+            <div>
+              <div class="d-flex justify-content-between small mb-1">
+                <span>Skipped</span>
+                <span class="text-warning fw-bold"><%= completionStats.skipped %></span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-warning" style="width: <%= completionStats.total_users > 0 ? 100 * completionStats.skipped / completionStats.total_users : 0 %>%;"></div>
+              </div>
+            </div>
+            <div>
+              <div class="d-flex justify-content-between small mb-1">
+                <span>In Progress</span>
+                <span class="text-info fw-bold"><%= completionStats.in_progress %></span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-info" style="width: <%= completionStats.total_users > 0 ? 100 * completionStats.in_progress / completionStats.total_users : 0 %>%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step Analysis -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-12">
+      <div class="card tile">
+        <div class="card-body">
+          <h5 class="card-title mb-4">
+            <i class="bi bi-list-columns"></i> Step-by-Step Analysis
+          </h5>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr class="border-bottom">
+                  <th>Step</th>
+                  <th class="text-end">Unique Users</th>
+                  <th class="text-end">Completed</th>
+                  <th class="text-end">Skipped</th>
+                  <th class="text-end">Avg Time (min)</th>
+                  <th class="text-end">Completion %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% stepRates.forEach(step => { %>
+                  <tr>
+                    <td class="fw-bold">
+                      <% if (step.step === 'welcome') { %>
+                        <i class="bi bi-hand-thumbs-up"></i> Welcome
+                      <% } else if (step.step === 'phone') { %>
+                        <i class="bi bi-telephone"></i> Phone Verification
+                      <% } else if (step.step === 'first_event') { %>
+                        <i class="bi bi-calendar-event"></i> First Event
+                      <% } %>
+                    </td>
+                    <td class="text-end"><%= step.unique_users %></td>
+                    <td class="text-end text-success"><%= step.completed_count %></td>
+                    <td class="text-end text-warning"><%= step.skipped_count %></td>
+                    <td class="text-end"><%= step.avg_time_minutes || 'N/A' %></td>
+                    <td class="text-end">
+                      <% if (step.unique_users > 0) { %>
+                        <span class="badge text-bg-<%= step.completed_count / step.unique_users >= 0.7 ? 'success' : step.completed_count / step.unique_users >= 0.4 ? 'warning' : 'danger' %>">
+                          <%= Math.round(100 * step.completed_count / step.unique_users) %>%
+                        </span>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Referral Metrics -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card tile">
+        <div class="card-body">
+          <h5 class="card-title mb-3">
+            <i class="bi bi-gift"></i> Referral Summary
+          </h5>
+          <div class="d-flex flex-column gap-2 small">
+            <div class="d-flex justify-content-between">
+              <span>Total Referral Signups:</span>
+              <strong><%= referralStats.total_referrals %></strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Approved Referrals:</span>
+              <strong><%= referralStats.approved %></strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Claimed by Referees:</span>
+              <strong><%= referralStats.referee_claimed %></strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Total Bonus Points Issued:</span>
+              <strong style="color: #ff9800;"><%= referralStats.total_bonus_points_issued %></strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Avg Bonus per Referral:</span>
+              <strong><%= referralStats.avg_bonus_points %> pts</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Referrers -->
+    <div class="col-lg-6">
+      <div class="card tile">
+        <div class="card-body">
+          <h5 class="card-title mb-3">
+            <i class="bi bi-star"></i> Top Referrers (90 days)
+          </h5>
+          <div class="d-flex flex-column gap-3 small">
+            <% topReferrers.slice(0, 5).forEach((referrer, idx) => { %>
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-bold"><%= idx + 1 %>. <%= referrer.name %></div>
+                  <div class="text-secondary text-truncate" style="font-size: 0.85rem;"><%= referrer.email %></div>
+                </div>
+                <div class="text-end">
+                  <div class="badge text-bg-primary"><%= referrer.referral_count %> referrals</div>
+                  <div class="small text-success"><%= referrer.total_bonus_earned %> pts</div>
+                </div>
+              </div>
+            <% }); %>
+            <% if (topReferrers.length === 0) { %>
+              <div class="text-secondary text-center py-3">No referrals yet</div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Trend Table -->
+  <div class="row g-3">
+    <div class="col-lg-12">
+      <div class="card tile">
+        <div class="card-body">
+          <h5 class="card-title mb-4">
+            <i class="bi bi-calendar-event"></i> Daily Trend (Last 7 Days)
+          </h5>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr class="border-bottom">
+                  <th>Date</th>
+                  <th class="text-end">Registrations</th>
+                  <th class="text-end">Completed</th>
+                  <th class="text-end">Completion %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% completionTrend.forEach(day => { %>
+                  <tr>
+                    <td><%= new Date(day.date).toLocaleDateString('sv-SE') %></td>
+                    <td class="text-end"><strong><%= day.registrations %></strong></td>
+                    <td class="text-end text-success"><%= day.completed %></td>
+                    <td class="text-end">
+                      <% const pct = day.registrations > 0 ? Math.round(100 * day.completed / day.registrations) : 0; %>
+                      <span class="badge text-bg-<%= pct >= 70 ? 'success' : pct >= 40 ? 'warning' : 'danger' %>">
+                        <%= pct %>%
+                      </span>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.js"></script>
+
+<script>
+// Fetch and render trend chart
+async function loadTrendChart() {
+  try {
+    const response = await fetch('/api/admin/onboarding/data?range=7');
+    const data = await response.json();
+    const trendData = data.trendData || [];
+
+    const ctx = document.getElementById('trend-chart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: trendData.map(d => new Date(d.date).toLocaleDateString('sv-SE')),
+        datasets: [
+          {
+            label: 'Registrations',
+            data: trendData.map(d => d.registrations),
+            borderColor: '#2196F3',
+            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+            tension: 0.4,
+            borderWidth: 2,
+            fill: true,
+          },
+          {
+            label: 'Completed',
+            data: trendData.map(d => d.completed),
+            borderColor: '#4caf50',
+            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            tension: 0.4,
+            borderWidth: 2,
+            fill: false,
+          },
+          {
+            label: 'Skipped',
+            data: trendData.map(d => d.skipped),
+            borderColor: '#ff9800',
+            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+            tension: 0.4,
+            borderWidth: 2,
+            fill: false,
+          },
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) { return value + ''; }
+            }
+          }
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Error loading trend chart:', err);
+  }
+}
+
+// Load chart on page load
+document.addEventListener('DOMContentLoaded', loadTrendChart);
+</script>
+
+<%- include('../partials/footer') %>

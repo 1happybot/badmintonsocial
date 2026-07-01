@@ -12,6 +12,7 @@ import { getAvatarClass, getAvatarEmoji } from './profile-avatars.js';
 import authRoutes from './routes/auth.js';
 import playerRoutes from './routes/players.js';
 import challengeRoutes from './routes/challenges.js';
+import onboardingRoutes from './routes/onboarding.js';
 import adminRoutes from './routes/admin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -52,7 +53,7 @@ app.use(session({
 
 app.use(attachUser(
   async (id) => {
-    const r = await query('SELECT id, name, email, city, skill_rating, is_active, phone_verified_at FROM users WHERE id = $1', [id]);
+    const r = await query('SELECT id, name, email, city, skill_rating, is_active, phone_verified_at, onboarding_completed_at, onboarding_step, onboarding_skipped_at FROM users WHERE id = $1', [id]);
     const u = r.rows[0];
     return u && u.is_active ? u : null;
   },
@@ -101,7 +102,21 @@ app.get('/tos', (req, res) => {
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
+// Onboarding middleware: redirect unonboarded users to onboarding flow
+app.use((req, res, next) => {
+  if (!req.user) return next(); // Not logged in
+  if (req.user.onboarding_completed_at) return next(); // Already done
+  if (req.user.onboarding_skipped_at) return next(); // Skipped
+  
+  const allowedPaths = ['/onboarding', '/logout', '/api/', '/healthz', '/static', '/public'];
+  const isAllowed = allowedPaths.some(p => req.path.startsWith(p));
+  if (isAllowed) return next();
+  
+  return res.redirect('/onboarding/welcome');
+});
+
 app.use(authRoutes);
+app.use(onboardingRoutes);
 app.use(playerRoutes);
 app.use(challengeRoutes);
 app.use(adminRoutes);

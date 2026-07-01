@@ -1,0 +1,661 @@
+/**
+ * PROFESSIONAL TYPOGRAPHY SYSTEM
+ * ==============================
+ * 
+ * This file defines a complete, professional typography system for TopMinton.
+ * It provides a comprehensive hierarchy of text styles for all content types.
+ * 
+ * Font Stack:
+ * - Primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial (System fonts)
+ * - Monospace: "Monaco", "Courier New", monospace
+ * 
+ * Color Strategy:
+ * - Use CSS custom properties from Bootstrap theme (--bs-body-color, --bs-body-color-rgb, etc.)
+ * - Supports light/dark mode automatically
+ * - Maintain sufficient contrast ratios (WCAG AA)
+ */
+
+/* ============================================================================
+   BASE TYPOGRAPHY CONFIGURATION
+   ============================================================================ */
+
+:root {
+  /* Font Families */
+  --tm-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --tm-font-mono: "Monaco", "Courier New", monospace;
+  
+  /* Font Sizes - Modular Scale (1.125 ratio for 16px base) */
+  --tm-font-size-xs: 0.75rem;      /* 12px - Small labels, tags */
+  --tm-font-size-sm: 0.875rem;     /* 14px - Captions, form labels, secondary text */
+  --tm-font-size-base: 1rem;       /* 16px - Body text */
+  --tm-font-size-lg: 1.125rem;     /* 18px - Larger paragraphs, form inputs */
+  --tm-font-size-xl: 1.25rem;      /* 20px - Section introductions */
+  --tm-font-size-2xl: 1.5rem;      /* 24px - Subsection headings */
+  --tm-font-size-3xl: 1.875rem;    /* 30px - Section headings */
+  --tm-font-size-4xl: 2.25rem;     /* 36px - Page headings */
+  --tm-font-size-5xl: 3rem;        /* 48px - Large page titles */
+  --tm-font-size-6xl: 3.75rem;     /* 60px - Hero titles */
+  
+  /* Font Weights - Semantic naming */
+  --tm-font-weight-thin: 100;
+  --tm-font-weight-light: 300;
+  --tm-font-weight-normal: 400;
+  --tm-font-weight-medium: 500;
+  --tm-font-weight-semibold: 600;
+  --tm-font-weight-bold: 700;
+  --tm-font-weight-extrabold: 800;
+  --tm-font-weight-black: 900;
+  
+  /* Line Heights - For optimal readability */
+  --tm-line-height-tight: 1.2;     /* Headings */
+  --tm-line-height-snug: 1.375;    /* Section headings */
+  --tm-line-height-normal: 1.5;    /* Standard body text */
+  --tm-line-height-relaxed: 1.75;  /* Long-form content */
+  --tm-line-height-loose: 2;       /* Extra spacing */
+  
+  /* Letter Spacing - Tracking */
+  --tm-letter-spacing-tighter: -0.05em;
+  --tm-letter-spacing-tight: -0.025em;
+  --tm-letter-spacing-normal: 0;
+  --tm-letter-spacing-wide: 0.025em;
+  --tm-letter-spacing-wider: 0.05em;
+  --tm-letter-spacing-widest: 0.1em;
+  
+  /* Text Color Variants */
+  --tm-text-primary: var(--bs-body-color);              /* Main text */
+  --tm-text-secondary: color-mix(in srgb, var(--bs-body-color) 65%, transparent);  /* Secondary text */
+  --tm-text-tertiary: color-mix(in srgb, var(--bs-body-color) 45%, transparent);   /* Tertiary text */
+  --tm-text-muted: color-mix(in srgb, var(--bs-body-color) 35%, transparent);      /* Muted text */
+  --tm-text-inverse: var(--bs-body-bg);                 /* Inverse for light backgrounds */
+}
+
+/* ============================================================================
+   GLOBAL TYPOGRAPHY DEFAULTS
+   ============================================================================ */
+
+html {
+  font-family: var(--tm-font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-size: var(--tm-font-size-base);
+  font-weight: var(--tm-font-weight-normal);
+  line-height: var(--tm-line-height-normal);
+  color: var(--tm-text-primary);
+  text-wrap: pretty;
+}
+
+/* ============================================================================
+   HEADING HIERARCHY
+   ============================================================================ */
+
+h1 {
+  font-size: var(--tm-font-size-5xl);
+  font-weight: var(--tm-font-weight-black);
+  line-height: var(--tm-line-height-tight);
+  letter-spacing: var(--tm-letter-spacing-tighter);
+  margin-bottom: var(--tm-font-size-lg);
+  color: var(--tm-text-primary);
+  word-wrap: break-word;
+}
+
+h2 {
+  font-size: var(--tm-font-size-4xl);
+  font-weight: var(--tm-font-weight-extrabold);
+  line-height: var(--tm-line-height-tight);
+  letter-spacing: var(--tm-letter-spacing-tight);
+  margin-bottom: var(--tm-font-size-base);
+  margin-top: var(--tm-font-size-2xl);
+  color: var(--tm-text-primary);
+}
+
+h3 {
+  font-size: var(--tm-font-size-3xl);
+  font-weight: var(--tm-font-weight-bold);
+  line-height: var(--tm-line-height-snug);
+  letter-spacing: var(--tm-letter-spacing-tight);
+  margin-bottom: var(--tm-font-size-base);
+  margin-top: var(--tm-font-size-xl);
+  color: var(--tm-text-primary);
+}
+
+h4 {
+  font-size: var(--tm-font-size-2xl);
+  font-weight: var(--tm-font-weight-semibold);
+  line-height: var(--tm-line-height-snug);
+  letter-spacing: var(--tm-letter-spacing-normal);
+  margin-bottom: var(--tm-font-size-sm);
+  margin-top: var(--tm-font-size-base);
+  color: var(--tm-text-primary);
+}
+
+h5 {
+  font-size: var(--tm-font-size-xl);
+  font-weight: var(--tm-font-weight-semibold);
+  line-height: var(--tm-line-height-normal);
+  letter-spacing: var(--tm-letter-spacing-normal);
+  margin-bottom: var(--tm-font-size-sm);
+  margin-top: var(--tm-font-size-base);
+  color: var(--tm-text-primary);
+}
+
+h6 {
+  font-size: var(--tm-font-size-lg);
+  font-weight: var(--tm-font-weight-semibold);
+  line-height: var(--tm-line-height-normal);
+  letter-spacing: var(--tm-letter-spacing-wide);
+  text-transform: uppercase;
+  margin-bottom: var(--tm-font-size-xs);
+  margin-top: var(--tm-font-size-sm);
+  color: var(--tm-text-secondary);
+}
+
+/* ============================================================================
+   SEMANTIC TEXT ELEMENTS
+   ============================================================================ */
+
+/* Paragraph - Default body text */
+p {
+  margin-bottom: 1.5rem;
+  color: var(--tm-text-primary);
+}
+
+/* Emphasized/Important text */
+strong, .fw-bold, b {
+  font-weight: var(--tm-font-weight-bold);
+  color: inherit;
+}
+
+/* Slightly emphasized text */
+em, .fw-semibold, i {
+  font-style: italic;
+  font-weight: var(--tm-font-weight-medium);
+}
+
+/* Small text - Captions, hints, metadata */
+small, .text-sm {
+  font-size: var(--tm-font-size-sm);
+  line-height: var(--tm-line-height-normal);
+  color: var(--tm-text-secondary);
+}
+
+/* Very small text - Tags, labels */
+.text-xs {
+  font-size: var(--tm-font-size-xs);
+  font-weight: var(--tm-font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tm-letter-spacing-wide);
+  color: var(--tm-text-tertiary);
+}
+
+/* Code/Monospace text */
+code, .code, pre {
+  font-family: var(--tm-font-mono);
+  background-color: var(--bs-tertiary-bg);
+  padding: 0.25em 0.5em;
+  border-radius: var(--radius-sm, 0.5rem);
+  font-size: 0.875em;
+  color: var(--tm-text-primary);
+}
+
+pre {
+  padding: 1rem;
+  overflow-x: auto;
+  line-height: var(--tm-line-height-normal);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--radius-md, 0.75rem);
+}
+
+pre code {
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  font-size: 0.875rem;
+}
+
+/* ============================================================================
+   TEXT UTILITY CLASSES
+   ============================================================================ */
+
+/* Text Colors */
+.text-primary {
+  color: var(--tm-text-primary) !important;
+}
+
+.text-secondary {
+  color: var(--tm-text-secondary) !important;
+}
+
+.text-tertiary {
+  color: var(--tm-text-tertiary) !important;
+}
+
+.text-muted {
+  color: var(--tm-text-muted) !important;
+}
+
+.text-light {
+  color: var(--tm-text-secondary) !important;
+}
+
+/* Font Sizes */
+.text-xs {
+  font-size: var(--tm-font-size-xs);
+  line-height: var(--tm-line-height-tight);
+}
+
+.text-sm {
+  font-size: var(--tm-font-size-sm);
+  line-height: var(--tm-line-height-tight);
+}
+
+.text-base {
+  font-size: var(--tm-font-size-base);
+  line-height: var(--tm-line-height-normal);
+}
+
+.text-lg {
+  font-size: var(--tm-font-size-lg);
+  line-height: var(--tm-line-height-normal);
+}
+
+.text-xl {
+  font-size: var(--tm-font-size-xl);
+  line-height: var(--tm-line-height-snug);
+}
+
+.text-2xl {
+  font-size: var(--tm-font-size-2xl);
+  line-height: var(--tm-line-height-snug);
+}
+
+.text-3xl {
+  font-size: var(--tm-font-size-3xl);
+  line-height: var(--tm-line-height-snug);
+}
+
+.text-4xl {
+  font-size: var(--tm-font-size-4xl);
+  line-height: var(--tm-line-height-tight);
+}
+
+.text-5xl {
+  font-size: var(--tm-font-size-5xl);
+  line-height: var(--tm-line-height-tight);
+}
+
+.text-6xl {
+  font-size: var(--tm-font-size-6xl);
+  line-height: var(--tm-line-height-tight);
+}
+
+/* Font Weights */
+.fw-thin {
+  font-weight: var(--tm-font-weight-thin);
+}
+
+.fw-light {
+  font-weight: var(--tm-font-weight-light);
+}
+
+.fw-normal {
+  font-weight: var(--tm-font-weight-normal);
+}
+
+.fw-medium {
+  font-weight: var(--tm-font-weight-medium);
+}
+
+.fw-semibold {
+  font-weight: var(--tm-font-weight-semibold);
+}
+
+.fw-bold {
+  font-weight: var(--tm-font-weight-bold);
+}
+
+.fw-extrabold {
+  font-weight: var(--tm-font-weight-extrabold);
+}
+
+.fw-black {
+  font-weight: var(--tm-font-weight-black);
+}
+
+/* Line Heights */
+.leading-tight {
+  line-height: var(--tm-line-height-tight);
+}
+
+.leading-snug {
+  line-height: var(--tm-line-height-snug);
+}
+
+.leading-normal {
+  line-height: var(--tm-line-height-normal);
+}
+
+.leading-relaxed {
+  line-height: var(--tm-line-height-relaxed);
+}
+
+.leading-loose {
+  line-height: var(--tm-line-height-loose);
+}
+
+/* Letter Spacing */
+.tracking-tighter {
+  letter-spacing: var(--tm-letter-spacing-tighter);
+}
+
+.tracking-tight {
+  letter-spacing: var(--tm-letter-spacing-tight);
+}
+
+.tracking-normal {
+  letter-spacing: var(--tm-letter-spacing-normal);
+}
+
+.tracking-wide {
+  letter-spacing: var(--tm-letter-spacing-wide);
+}
+
+.tracking-wider {
+  letter-spacing: var(--tm-letter-spacing-wider);
+}
+
+.tracking-widest {
+  letter-spacing: var(--tm-letter-spacing-widest);
+}
+
+/* Text Alignment */
+.text-left {
+  text-align: left;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-justify {
+  text-align: justify;
+}
+
+/* Text Transformation */
+.uppercase {
+  text-transform: uppercase;
+}
+
+.lowercase {
+  text-transform: lowercase;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+.normal-case {
+  text-transform: none;
+}
+
+/* Text Truncation & Wrapping */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Word Breaking */
+.break-words {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.break-all {
+  word-break: break-all;
+}
+
+.break-keep {
+  word-break: keep-all;
+}
+
+/* ============================================================================
+   SEMANTIC TYPOGRAPHY CLASSES
+   ============================================================================ */
+
+/* Display - Large hero/title text */
+.display-1 {
+  font-size: var(--tm-font-size-6xl);
+  font-weight: var(--tm-font-weight-black);
+  line-height: var(--tm-line-height-tight);
+  letter-spacing: var(--tm-letter-spacing-tighter);
+}
+
+.display-2 {
+  font-size: var(--tm-font-size-5xl);
+  font-weight: var(--tm-font-weight-extrabold);
+  line-height: var(--tm-line-height-tight);
+  letter-spacing: var(--tm-letter-spacing-tight);
+}
+
+/* Lead paragraph - Introductory/teaser text */
+.lead {
+  font-size: var(--tm-font-size-xl);
+  font-weight: var(--tm-font-weight-normal);
+  line-height: var(--tm-line-height-relaxed);
+  color: var(--tm-text-secondary);
+}
+
+/* Label - Form labels, badges, tags */
+.label {
+  font-size: var(--tm-font-size-xs);
+  font-weight: var(--tm-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tm-letter-spacing-wider);
+  color: var(--tm-text-tertiary);
+}
+
+/* Caption - Image captions, footnotes */
+.caption {
+  font-size: var(--tm-font-size-sm);
+  font-weight: var(--tm-font-weight-normal);
+  line-height: var(--tm-line-height-normal);
+  color: var(--tm-text-secondary);
+  font-style: italic;
+}
+
+/* Overline - Above text, like section markers */
+.overline {
+  font-size: var(--tm-font-size-xs);
+  font-weight: var(--tm-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tm-letter-spacing-widest);
+  color: var(--tm-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+/* Description list styling */
+dt {
+  font-weight: var(--tm-font-weight-semibold);
+  font-size: var(--tm-font-size-base);
+  margin-top: 0.75rem;
+  color: var(--tm-text-primary);
+}
+
+dd {
+  margin-left: 0;
+  margin-bottom: 1rem;
+  font-size: var(--tm-font-size-base);
+  color: var(--tm-text-secondary);
+  line-height: var(--tm-line-height-relaxed);
+}
+
+/* ============================================================================
+   LINKS & INTERACTIVE TEXT
+   ============================================================================ */
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Styled links */
+.link {
+  color: var(--bs-link-color);
+  text-decoration: none;
+  font-weight: var(--tm-font-weight-medium);
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: var(--bs-link-hover-color);
+  text-decoration: underline;
+}
+
+/* ============================================================================
+   RESPONSIVE TEXT SCALING
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: var(--tm-font-size-4xl);
+  }
+
+  h2 {
+    font-size: var(--tm-font-size-3xl);
+  }
+
+  h3 {
+    font-size: var(--tm-font-size-2xl);
+  }
+
+  .display-1 {
+    font-size: var(--tm-font-size-5xl);
+  }
+
+  .display-2 {
+    font-size: var(--tm-font-size-4xl);
+  }
+
+  .lead {
+    font-size: var(--tm-font-size-base);
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 15px;
+  }
+
+  h1 {
+    font-size: var(--tm-font-size-3xl);
+  }
+
+  h2 {
+    font-size: var(--tm-font-size-2xl);
+  }
+
+  h3 {
+    font-size: var(--tm-font-size-xl);
+  }
+
+  .display-1 {
+    font-size: var(--tm-font-size-4xl);
+  }
+
+  .display-2 {
+    font-size: var(--tm-font-size-3xl);
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================================================ */
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Better focus states for keyboard navigation */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--bs-primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  body {
+    color: #000;
+    background: #fff;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #000;
+    page-break-after: avoid;
+  }
+
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  a {
+    color: #0066cc;
+    text-decoration: underline;
+  }
+
+  .no-print {
+    display: none;
+  }
+}

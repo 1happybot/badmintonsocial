@@ -5,6 +5,9 @@ import { pool, query } from '../db.js';
 import { flash, requireAdminAuth } from '../middleware.js';
 import { sendPasswordResetEmail } from '../email-verification.js';
 
+// Make middleware available at module level
+const requireAdminAuthMiddleware = requireAdminAuth;
+
 export function createAdminRouter(deps = {}) {
   const {
     pool: dbPool = pool,
@@ -699,6 +702,165 @@ router.post('/admin/reset-password', async (req, res) => {
 
   flash(req, 'success', 'Admin password updated. You can now log in.');
   return res.redirect('/admin/login');
+});
+
+// ===== ONBOARDING METRICS DASHBOARD =====
+
+router.get('/admin/onboarding', requireAdminAuthMiddleware, async (req, res) => {
+  try {
+    // Get onboarding completion stats
+    const completionStats = (await runQuery(`
+      SELECT 
+        COUNT(*)::int AS total_users,
+        SUM(CASE WHEN onboarding_completed_at IS NOT NULL THEN 1 ELSE 0 END)::int AS completed,
+        SUM(CASE WHEN onboarding_skipped_at IS NOT NULL THEN 1 ELSE 0 END)::int AS skipped,
+        SUM(CASE WHEN onboarding_completed_at IS NULL AND onboarding_skipped_at IS NULL THEN 1 ELSE 0 END)::int AS in_progress
+      FROM users
+      WHERE created_at >= NOW() - INTERVAL '90 days'
+    `)).rows[0];
+
+    // Get step completion rates
+    const stepRates = (await runQuery(`
+      SELECT 
+        step,
+        COUNT(DISTINCT user_id)::int AS unique_users,
+        SUM(CASE WHEN action = 'completed' THEN 1 ELSE 0 END)::int AS completed_count,
+        SUM(CASE WHEN action = 'skipped' THEN 1 ELSE 0 END)::int AS skipped_count,
+        ROUND(AVG(time_spent_seconds)/60.0, 1)::decimal AS avg_time_minutes
+      FROM onboarding_metrics
+      WHERE created_at >= NOW() - INTERVAL '90 days'
+      GROUP BY step
+      ORDER BY step ASC
+    `)).rows;
+
+    // Get SMS verification success rate
+    const phoneVerificationStats = (await runQuery(`
+      SELECT 
+        COUNT(DISTINCT user_id)::int AS total_attempted,
+        COUNT(CASE WHEN phone_verified_at IS NOT NULL THEN 1 END)::int AS verified_count,
+        ROUND(100.0 * COUNT(CASE WHEN phone_verified_at IS NOT NULL THEN 1 END) / NULLIF(COUNT(*), 0), 1)::decimal AS success_rate
+      FROM users
+      WHERE created_at >= NOW() - INTERVAL '90 days'
+    `)).rows[0];
+
+    // Get referral bonus stats
+    const referralStats = (await runQuery(`
+      SELECT 
+        COUNT(*)::int AS total_referrals,
+        COUNT(CASE WHEN status = 'approved' THEN 1 END)::int AS approved,
+        COUNT(CASE WHEN referee_claimed_at IS NOT NULL THEN 1 END)::int AS referee_claimed,
+        COALESCE(SUM(bonus_points), 0)::int AS total_bonus_points_issued,
+        ROUND(AVG(bonus_points), 0)::int AS avg_bonus_points
+      FROM referral_bonuses
+      WHERE created_at >= NOW() - INTERVAL '90 days'
+    `)).rows[0];
+
+    // Get onboarding completion trend (last 7 days)
+    const completionTrend = (await runQuery(`
+      SELECT 
+        DATE(created_at)::text AS date,
+        COUNT(*)::int AS registrations,
+        COUNT(CASE WHEN onboarding_completed_at IS NOT NULL THEN 1 END)::int AS completed
+      FROM users
+      WHERE created_at >= NOW() - INTERVAL '7 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC
+    `)).rows;
+
+    // Top referrers
+    const topReferrers = (await runQuery(`
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        COUNT(rb.id)::int AS referral_count,
+        SUM(rb.referrer_bonus_points)::int AS total_bonus_earned
+      FROM users u
+      LEFT JOIN referral_bonuses rb ON rb.referrer_id = u.id AND rb.created_at >= NOW() - INTERVAL '90 days'
+      GROUP BY u.id, u.name, u.email
+      HAVING COUNT(rb.id) > 0
+      ORDER BY COUNT(rb.id) DESC
+      LIMIT 10
+    `)).rows;
+
+    res.render('admin/onboarding-metrics', {
+      title: 'Onboarding Metrics Dashboard',
+      completionStats,
+      stepRates,
+      phoneVerificationStats,
+      referralStats,
+      completionTrend,
+      topReferrers,
+    });
+  } catch (err) {
+    console.error('[admin] onboarding metrics error:', err);
+    req.flash('error', 'Failed to load onboarding metrics');
+    res.redirect('/admin');
+  }
+});
+
+// API endpoint for onboarding analytics data
+router.get('/api/admin/onboarding/data', requireAdminAuthMiddleware, async (req, res) => {
+  try {
+    const timeRange = req.query.range || '30'; // days
+    
+    // Completion trend data for chart
+    const trendData = (await runQuery(`
+      SELECT 
+        DATE(created_at)::text AS date,
+        COUNT(*)::int AS registrations,
+        COUNT(CASE WHEN onboarding_completed_at IS NOT NULL THEN 1 END)::int AS completed,
+        COUNT(CASE WHEN onboarding_skipped_at IS NOT NULL THEN 1 END)::int AS skipped
+      FROM users
+      WHERE created_at >= NOW() - INTERVAL '${parseInt(timeRange)} days'
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `)).rows;
+
+    // Step-by-step funnel
+    const funnelData = (await runQuery(`
+      SELECT 
+        'Welcome' AS step, 
+        COUNT(DISTINCT user_id)::int AS users,
+        ROUND(100.0 * COUNT(DISTINCT user_id) / (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '${parseInt(timeRange)} days'), 1)::decimal AS percentage
+      FROM onboarding_metrics
+      WHERE step = 'welcome' AND created_at >= NOW() - INTERVAL '${parseInt(timeRange)} days'
+      
+      UNION ALL
+      
+      SELECT 
+        'Phone', 
+        COUNT(DISTINCT user_id)::int,
+        ROUND(100.0 * COUNT(DISTINCT user_id) / (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '${parseInt(timeRange)} days'), 1)::decimal
+      FROM onboarding_metrics
+      WHERE step = 'phone' AND created_at >= NOW() - INTERVAL '${parseInt(timeRange)} days'
+      
+      UNION ALL
+      
+      SELECT 
+        'First Event',
+        COUNT(DISTINCT user_id)::int,
+        ROUND(100.0 * COUNT(DISTINCT user_id) / (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '${parseInt(timeRange)} days'), 1)::decimal
+      FROM onboarding_metrics
+      WHERE step = 'first_event' AND created_at >= NOW() - INTERVAL '${parseInt(timeRange)} days'
+      
+      UNION ALL
+      
+      SELECT 
+        'Completed',
+        COUNT(*)::int,
+        ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '${parseInt(timeRange)} days'), 1)::decimal
+      FROM users
+      WHERE onboarding_completed_at IS NOT NULL AND created_at >= NOW() - INTERVAL '${parseInt(timeRange)} days'
+      
+      ORDER BY percentage DESC
+    `)).rows;
+
+    res.json({ trendData, funnelData });
+  } catch (err) {
+    console.error('[api] onboarding data error:', err);
+    res.status(500).json({ error: 'Failed to fetch onboarding data' });
+  }
 });
 
 export default router;
